@@ -133,7 +133,6 @@ Contacts.prototype = {
       debug("Correct new database version:", event.newVersion == DB_VERSION);
 
       let db = event.target.result;
-      db.version = DB_VERSION;
 
       switch (event.oldVersion) {
         case 0:
@@ -172,13 +171,36 @@ Contacts.prototype = {
 
   /**
    * Start a new transaction.
+   * 
+   * @param txn_type
+   *        Type of transaction (e.g. IDBTransaction.READ_WRITE)
+   * @param callback
+   *        Function to call when the transaction is available. It will
+   *        be invoked with the transaction and the 'contacts' object store.
+   * @param successCb [optional]
+   *        Success callback to call on a successful transaction commit.
+   * @param failureCb [optional]
+   *        Error callback to call when an error is encountered.
    */
-  newTxn: function newTxn(txn_type, callback) {
+  newTxn: function newTxn(txn_type, callback, successCb, failureCb) {
     this.ensureDB(function (db) {
       debug("Starting new transaction", txn_type);
       let txn = db.transaction([STORE_NAME], txn_type);
       debug("Retrieving object store", STORE_NAME);
       let store = txn.objectStore(STORE_NAME);
+
+      if (successCb) {
+        txn.oncomplete = function (event) {
+          successCb();
+        };
+      }
+      if (failureCb) {
+        txn.onerror = function (event) {
+          //TODO look at event.target.Code and change error constant accordingly
+          failureCb(new ContactError(UNKNOWN_ERROR));
+        };
+      }
+
       callback(txn, store);
     });
   },
@@ -249,19 +271,13 @@ Contacts.prototype = {
   update: function update(successCb, errorCb, contact) {
     this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
       store.put(contact);
-      txn.oncomplete = function (event) {
-        successCb();
-      };
-    });
+    }, successCb, errorCb);
   },
 
   delete: function delete_(successCb, errorCb, id) {
     this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
       store.delete(id);
-      txn.oncomplete = function (event) {
-        successCb();
-      };
-    });
+    }, successCb, errorCb);
   }
 };
 
