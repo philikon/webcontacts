@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body onload="AB.init()">
+
+<script type="application/javascript;version=1.8" src="contacts.js"></script>
+<script type="application/javascript;version=1.8" src="addressbook.js"></script>
+
+<div>
+  <label for="filter">Search Addressbook:</label>
+  <input type="text" id="filter">
+</div>
+<div>
+  <button id="new" onclick="return AB.newContactForm();">
+    Create new contact
+  </button>
+</div>
+<p id="errorMsg"></p>
+<form id="new_contact"
+      style="width: 300px; display: none;">
+  <!-- Name stuff -->
+  <fieldset name="name">
+    <input type="text" id="name.givenName" placeholder="First name">
+    <input type="text" id="name.familyName" placeholder="Surname">
+    <!-- TODO expandy thingy for other attributes -->
+  </fieldset>
+  <fieldset name="phoneNumbers" id="fieldset.phoneNumbers">
+    <!-- Dynamically created content goes here. -->
+    <button id="phoneNumbers.add" onclick="return AB.newSimpleListEntry('phoneNumbers');">+</button>
+  </fieldset>
+  <fieldset name="emails" id="fieldset.emails">
+    <!-- Dynamically created content goes here. -->
+    <button id="emails.add" onclick="return AB.newSimpleListEntry('emails');">+</button>
+  </fieldset>
+  <fieldset name="addresses" id="fieldset.addresses">
+  <!-- TODO this can't be a simple list entry -->
+    <!-- Dynamically created content goes here. -->
+    <button id="addresses.add" onclick="return AB.newSimpleListEntry(addresses');">+</button>
+  </fieldset>
+  <textarea id="note" placeholder="Notes"></textarea>
+  <div>
+    <button onclick="return AB.cancelNewContactForm();">Cancel</button>
+    <button onclick="return AB.createNewContact();">Create</button>
+  </div>
+</form>
+
+<table id="contactlist">
+<tbody>
+  <!-- Dynamically created content goes here. -->
+</tbody>
+</table>
+
+</body>
+</html>

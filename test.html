@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body onload="next();">
+
+<script type="application/javascript;version=1.8" src="contacts.js"></script>
+<script type="application/javascript;version=1.8">
+
+let sample_contact = {
+  id: "c3b2c2b8-0eff-4ed6-865e-a372b7e0154f",
+  displayName: "Philipp von Weitershausen",
+  name: {
+    familyName: "von Weitershausen",
+    givenName: "Philipp",
+    middleName: "",
+    honorificPrefix: "",
+    honorificSuffic: "",
+    formatted: "Philipp von Weitershausen",
+  },
+  nickname: "philikon",
+  phoneNumbers: [],
+  emails: [],
+  addresses: [],
+  ims: [],
+  organizations: [],
+  birthday: null,
+  note: "",
+  photos: [],
+  categories: [],
+  urls: []
+};
+
+let fields = ["id", "name", "ims"];
+
+function onSuccess(contacts) {
+  console.log("onSuccess", contacts);
+  next();
+}
+
+function onFailure(error) {
+  console.log("onFailure", error);
+}
+
+let index = 0;
+let steps = [
+  function () {
+    console.log("Retrieving all contacts...");
+    window.navigator.mozContacts.find(fields, onSuccess, onFailure, {});
+  },
+  function () {
+    console.log("Adding a new contact", sample_contact);
+    window.navigator.mozContacts.create(onSuccess, onFailure, sample_contact);
+  },
+  function () {
+    console.log("Retrieving all contacts...");
+    window.navigator.mozContacts.find(fields, onSuccess, onFailure, {});
+  },
+  function () {
+    sample_contact.ims.push({type: "IRC",
+                             value: "philikon",
+                             pref: false});
+    console.log("Modifying contact", sample_contact);
+    window.navigator.mozContacts.create(onSuccess, onFailure, sample_contact);
+  },
+  function () {
+    console.log("Retrieving all contacts...");
+    window.navigator.mozContacts.find(fields, onSuccess, onFailure, {});
+  },
+  function () {
+    console.log("Deleting contact", sample_contact.id);
+    window.navigator.mozContacts.delete(onSuccess, onFailure, sample_contact.id);
+  },
+  function () {
+    console.log("All done");
+  }
+];
+
+function next() {
+  if (index >= steps.length) {
+    console.log("Shouldn't get here!", Error().stack);
+    return;
+  }
+window.setTimeout(function () {
+  try {
+    steps[index]();
+  } catch(ex) {
+    console.log("Caught exception", ex);
+  }
+  index += 1;
+}, 0);
+}
+
+</script>
+</body>
+</html>
