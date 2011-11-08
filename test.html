@@ -72,6 +72,10 @@ let steps = [
     window.navigator.mozContacts.delete(onSuccess, onFailure, sample_contact.id);
   },
   function () {
+    console.log("Deleting database");
+    window.mozIndexedDB.deleteDatabase("contacts").onsuccess = onSuccess;
+  },
+  function () {
     console.log("All done");
   }
 ];
@@ -81,14 +85,12 @@ function next() {
     console.log("Shouldn't get here!", Error().stack);
     return;
   }
-window.setTimeout(function () {
   try {
     steps[index]();
   } catch(ex) {
     console.log("Caught exception", ex);
   }
   index += 1;
-}, 0);
 }
 
 </script>
