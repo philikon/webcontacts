@@ -39,37 +39,78 @@ function onSuccess(contacts) {
 }
 
 function onFailure(error) {
-  console.log("onFailure", error);
+  console.error("onFailure", error);
+}
+
+function assert(assertion, msg) {
+  if (assertion) {
+    console.info("TEST-PASS", msg);
+  } else {
+    throw "TEST-UNEXPECTED_FAIL " + msg;
+  }
 }
 
 let index = 0;
 let steps = [
   function () {
+    console.log("Deleting database");
+    let request = window.mozIndexedDB.deleteDatabase("contacts");
+    request.onsuccess = request.onerror = function () {
+      next();
+    };
+  },
+  function () {
     console.log("Retrieving all contacts...");
-    window.navigator.mozContacts.find(fields, onSuccess, onFailure, {});
+    window.navigator.mozContacts.find(fields, function (contacts) {
+      assert(contacts.length == 0, "Empty database is empty.");
+      next();
+    }, onFailure, {});
   },
   function () {
     console.log("Adding a new contact", sample_contact);
-    window.navigator.mozContacts.create(onSuccess, onFailure, sample_contact);
+    window.navigator.mozContacts.create(function (contact) {
+      assert(contact.id == sample_contact.id, "Same ID"); // TODO have the contacts service generate the ID?
+      assert(contact.displayName == sample_contact.displayName, "Same displayName");
+      next();
+    }, onFailure, sample_contact);
   },
   function () {
     console.log("Retrieving all contacts...");
-    window.navigator.mozContacts.find(fields, onSuccess, onFailure, {});
+    window.navigator.mozContacts.find(fields, function (contacts) {
+      assert(contacts.length == 1, "Found exactly 1 contact.");
+      assert(contacts[0].id == sample_contact.id, "Same ID");
+      assert(contacts[0].displayName == sample_contact.displayName, "Same displayName");
+      assert(contacts[0].ims.length == 0, "No IMS info.");
+      next();
+    }, onFailure, {});
   },
   function () {
     sample_contact.ims.push({type: "IRC",
                              value: "philikon",
-                             pref: false});
+                             pref: true});
     console.log("Modifying contact", sample_contact);
-    window.navigator.mozContacts.create(onSuccess, onFailure, sample_contact);
-  },
-  function () {
-    console.log("Retrieving all contacts...");
-    window.navigator.mozContacts.find(fields, onSuccess, onFailure, {});
+    window.navigator.mozContacts.update(function () {
+      console.log("Retrieving all contacts...");
+      window.navigator.mozContacts.find(fields, function (contacts) {
+        assert(contacts.length == 1, "Found exactly 1 contact.");
+        assert(contacts[0].id == sample_contact.id, "Same ID");
+        assert(contacts[0].displayName == sample_contact.displayName, "Same displayName");
+        assert(contacts[0].ims.length == 1, "Found exactly 1 IMS info.");
+        assert(contacts[0].ims[0].type == "IRC", "IMS type is correct.")
+        assert(contacts[0].ims[0].value == "philikon", "IMS value is correct.")
+        assert(contacts[0].ims[0].pref == true, "IMS pref is correct.")
+        next();
+      }, onFailure, {});
+    }, onFailure, sample_contact);
   },
   function () {
     console.log("Deleting contact", sample_contact.id);
-    window.navigator.mozContacts.delete(onSuccess, onFailure, sample_contact.id);
+    window.navigator.mozContacts.delete(function () {
+      window.navigator.mozContacts.find(fields, function (contacts) {
+        assert(contacts.length == 0, "Empty database is empty.");
+        next();
+      }, onFailure, {});
+    }, onFailure, sample_contact.id);
   },
   function () {
     console.log("Deleting database");
