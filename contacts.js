@@ -74,6 +74,14 @@ ContactError.prototype = {
 
 
 function debug() {
+  dump(Array.join(arguments, " "));
+}
+
+function generateUI() {
+  //TODO make this a lazy service getter
+  let uuidGenerator = Cc["@mozilla.org/uuid-generator;1"]
+                        .getService(Ci.nsIUUIDGenerator);
+  return uuidGenerator.generateUUID().toString();
 }
 
 
@@ -243,11 +251,6 @@ Contacts.prototype = {
 
   create: function create(successCb, errorCb, contact) {
     if (!contact.id) {
-      /*
-      let uuidGenerator = Cc["@mozilla.org/uuid-generator;1"]
-                            .getService(Ci.nsIUUIDGenerator);
-      contact.id = uuidGenerator.generateUUID().toString();
-      */
       contact.id = generateUUID();
     } else {
       // TODO verify that the record doesn't exist yet.
