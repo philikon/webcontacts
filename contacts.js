@@ -191,10 +191,11 @@ Contacts.prototype = {
 
       if (successCb) {
         txn.oncomplete = function (event) {
-          successCb();
+          successCb(txn.result);
         };
       }
       if (failureCb) {
+        // The transaction will automatically be aborted.
         txn.onerror = function (event) {
           //TODO look at event.target.Code and change error constant accordingly
           failureCb(new ContactError(UNKNOWN_ERROR));
@@ -226,7 +227,7 @@ Contacts.prototype = {
 
     this.newTxn(IDBTransaction.READ_ONLY, function (txn, store) {
       //TODO handle `options`
-      let results = [];
+      txn.result = [];
       store.openCursor().onsuccess = function (event) {
         let cursor = event.target.result;
         if (!cursor) {
@@ -234,13 +235,10 @@ Contacts.prototype = {
           return;
         }
         //TODO handle `fields` -- via proxy perhaps?
-        results.push(cursor.value);
+        txn.result.push(cursor.value);
         cursor.continue();
       };
-      txn.oncomplete = function (event) {
-        successCb(results);
-      };
-    });
+    }, successCb, failureCb);
   },
 
   create: function create(successCb, errorCb, contact) {
@@ -251,21 +249,19 @@ Contacts.prototype = {
       contact.id = uuidGenerator.generateUUID().toString();
       */
       contact.id = generateUUID();
+    } else {
+      // TODO verify that the record doesn't exist yet.
     }
     //TODO ensure the contact has at minimum fields (id, what else?)
     //TODO ensure default values exist
     this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
-      let result;
       store.put(contact).onsuccess = function (event) {
         let id = event.target.result;
         store.get(id).onsuccess = function (event) {
-          result = event.target.result;
+          txn.result = event.target.result;
         };
       };
-      txn.oncomplete = function (event) {
-        successCb(result);
-      };
-    });
+    }, successCb, errorCb);
   },
 
   update: function update(successCb, errorCb, contact) {
