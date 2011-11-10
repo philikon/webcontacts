@@ -41,6 +41,7 @@
 //
 // - searching/filtering
 // - sorting
+// - audit all calls for exception handling
 
 const DB_NAME = "contacts";
 const DB_VERSION = 1;
@@ -199,11 +200,13 @@ Contacts.prototype = {
       let store = txn.objectStore(STORE_NAME);
 
       txn.oncomplete = function (event) {
+        debug("Transaction complete. Returning to callback.");
         successCb(txn.result);
       };
       // The transaction will automatically be aborted.
       txn.onerror = function (event) {
-        //TODO look at event.target.Code and change error constant accordingly
+        debug("Caught error on transaction", event.target.errorCode);
+        //TODO look at event.target.errorCode and change error constant accordingly
         failureCb(new ContactError(UNKNOWN_ERROR));
       };
 
@@ -216,7 +219,7 @@ Contacts.prototype = {
    * WebContacts API
    */
 
-  find: function find(fields, successCb, failureCb, options) {
+  find: function find(fields, successCb, failureCb, filter) {
     //TODO PENDING_OPERATION_ERROR -- the transactionality of indexedDB should
     // give us this for free
     if (!successCb) {
@@ -234,17 +237,35 @@ Contacts.prototype = {
     }
 
     this.newTxn(IDBTransaction.READ_ONLY, function (txn, store) {
-      //TODO handle `options`
       txn.result = [];
-      store.openCursor().onsuccess = function (event) {
-        let cursor = event.target.result;
-        if (!cursor) {
-          debug("Empty cursor, must have fetched all results.");
-          return;
+
+      let request;
+
+      let filter_keys = [];
+      if (filter) {
+        filter_keys = Object.keys(filter);
+      }
+
+      if (filter_keys.length == 1) {
+        let key = filter_keys[0];
+        let value = filter[key];
+        //TODO check whether filter_key is a valid index;
+        if (key == "id") {
+          request = store.getAll(value);
+        } else {
+          debug("Getting index", key);
+          let index = store.index(key);;
+          request = index.getAll(value);
         }
-        //TODO handle `fields` -- via proxy perhaps?
-        txn.result.push(cursor.value);
-        cursor.continue();
+      } else if (filter_keys.length > 1) {
+        //TODO implement. for now just return everything.
+        request = store.getAll();
+      } else {
+        request = store.getAll();
+      }
+
+      request.onsuccess = function (event) {
+        txn.result = event.target.result;
       };
     }, successCb, failureCb);
   },
@@ -257,10 +278,13 @@ Contacts.prototype = {
     }
     //TODO ensure the contact has at minimum fields (id, what else?)
     //TODO ensure default values exist
+    debug("Going to add", contact.id);
     this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
-      store.put(contact).onsuccess = function (event) {
+      store.add(contact).onsuccess = function (event) {
         let id = event.target.result;
+        debug("Successfully added", id);
         store.get(id).onsuccess = function (event) {
+          debug("Retrieving full record for", id);
           txn.result = event.target.result;
         };
       };

@@ -85,6 +85,26 @@ let steps = [
     }, onFailure, {});
   },
   function () {
+    console.log("Retrieving a specific contact by ID...");
+    window.navigator.mozContacts.find(fields, function (contacts) {
+      assert(contacts.length == 1, "Found exactly 1 contact.");
+      assert(contacts[0].id == sample_contact.id, "Same ID");
+      assert(contacts[0].displayName == sample_contact.displayName, "Same displayName");
+      assert(contacts[0].ims.length == 0, "No IMS info.");
+      next();
+    }, onFailure, {id: sample_contact.id});
+  },
+  function () {
+    console.log("Retrieving a specific contact by givenName...");
+    window.navigator.mozContacts.find(fields, function (contacts) {
+      assert(contacts.length == 1, "Found exactly 1 contact.");
+      assert(contacts[0].id == sample_contact.id, "Same ID");
+      assert(contacts[0].displayName == sample_contact.displayName, "Same displayName");
+      assert(contacts[0].ims.length == 0, "No IMS info.");
+      next();
+    }, onFailure, {givenName: sample_contact.name.givenName});
+  },
+  function () {
     sample_contact.ims.push({type: "IRC",
                              value: "philikon",
                              pref: true});
