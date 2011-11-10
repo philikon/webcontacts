@@ -39,8 +39,8 @@
 
 //TODO
 //
-// - error handling for requests and transaction aborts
 // - searching/filtering
+// - sorting
 
 const DB_NAME = "contacts";
 const DB_VERSION = 1;
@@ -111,12 +111,12 @@ Contacts.prototype = {
   db: null,
 
   /**
-   * Prepare the database. This may include opening the database and upgrading it
-   * to the latest schema version.
+   * Prepare the database. This may include opening the database and upgrading
+   * it to the latest schema version.
    * 
    * @return (via callback) a database ready for use.
    */
-  ensureDB: function ensureDB(callback) {
+  ensureDB: function ensureDB(callback, failureCb) {
     if (this.db) {
       debug("ensureDB: already have a database, returning early.");
       callback(this.db);
@@ -152,17 +152,18 @@ Contacts.prototype = {
           debug("No idea what to do with old database version:",
                 event.oldVersion);
           event.target.transaction.abort();
-          //TODO call callback with error arg, or will the onerror handler take
-          // care of that?
+          failureCb(new ContactError(IO_ERROR));
           break;
       }
     };
     request.onerror = function (event) {
       debug("Failed to open database:", DB_NAME);
-      // TODO call callbcak with error arg
+      //TODO look at event.target.Code and change error constant accordingly
+      failureCb(new ContactError(IO_ERROR));
     };
     request.onblocked = function (event) {
       debug("Opening database request is blocked.");
+      failureCb(new ContactError(IO_ERROR));
     };
   },
 
@@ -197,21 +198,17 @@ Contacts.prototype = {
       debug("Retrieving object store", STORE_NAME);
       let store = txn.objectStore(STORE_NAME);
 
-      if (successCb) {
-        txn.oncomplete = function (event) {
-          successCb(txn.result);
-        };
-      }
-      if (failureCb) {
-        // The transaction will automatically be aborted.
-        txn.onerror = function (event) {
-          //TODO look at event.target.Code and change error constant accordingly
-          failureCb(new ContactError(UNKNOWN_ERROR));
-        };
-      }
+      txn.oncomplete = function (event) {
+        successCb(txn.result);
+      };
+      // The transaction will automatically be aborted.
+      txn.onerror = function (event) {
+        //TODO look at event.target.Code and change error constant accordingly
+        failureCb(new ContactError(UNKNOWN_ERROR));
+      };
 
       callback(txn, store);
-    });
+    }, failureCb);
   },
 
 
@@ -226,10 +223,13 @@ Contacts.prototype = {
       throw TypeError("Must provide a success callback.");
     }
 
+    // A bunch of downstream code expects that failureCb is a function.
+    if (typeof failureCb != "function") {
+      failureCb = function () {};
+    }
+
     if (!fields.length) {
-      if (failureCb) {
-        failureCb(new ContactError(INVALID_ARGUMENT_ERROR));
-      }
+      failureCb(new ContactError(INVALID_ARGUMENT_ERROR));
       return;
     }
 
@@ -289,7 +289,9 @@ let contacts = window.navigator.mozContacts = new Contacts();
 contacts.init(window);
 
 function debug() {
-  console.log.apply(console, arguments);
+  let args = Array.slice(arguments);
+  args.unshift("DEBUG");
+  console.log.apply(console, args);
 }
 
 /**
