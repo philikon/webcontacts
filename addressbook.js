@@ -43,10 +43,10 @@ function setAttrByPath(obj, path, value) {
 let AB = {
 
   init: function init() {
-    this.updateContactListing();
-    this.newSimpleListEntry("phoneNumbers");
-    this.newSimpleListEntry("emails");
-    this.newSimpleListEntry("addresses");
+    AB.updateContactListing();
+    AB.newSimpleListEntry("phoneNumbers");
+    AB.newSimpleListEntry("emails");
+    AB.newSimpleListEntry("addresses");
   },
 
   newContactForm: function newContactForm() {
@@ -120,10 +120,10 @@ let AB = {
     let fields = form.elements;
     for (let i = 0; i < fields.length; i++) {
       let field = fields[i];
-      if (field.localName == "fieldset") {
+      if (["fieldset", "button"].indexOf(field.localName) != -1) {
         continue;
       }
-      console.log(field.id, "->", field.value);
+      console.log(field.localName + "#" + field.id, "->", field.value);
       if (field.value) {
         setAttrByPath(record, field.id, field.value);
       }
@@ -176,7 +176,9 @@ let AB = {
 
   displayContactList: function displayContactList(contacts) {
     let table = document.getElementById("contactlist");
-    table.removeChild(table.firstChild); // nukes the tbody
+    while (table.tBodies.length) {
+      table.removeChild(table.tBodies[0]);
+    }
 
     let tbody = document.createElement("tbody");
     if (!contacts.length) {
