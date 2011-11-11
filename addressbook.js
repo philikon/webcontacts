@@ -50,6 +50,8 @@ let AB = {
   },
 
   newContactForm: function newContactForm() {
+    document.getElementById("newContactButton").disabled = true;
+
     AB.currentContact = {name: {},
                          phoneNumbers: [],
                          emails: [],
@@ -126,6 +128,7 @@ let AB = {
   },
 
   closeContactEditForm: function closeContactEditForm() {
+    document.getElementById("newContactButton").disabled = false;
     document.getElementById("errorMsg").textContent = "";
 
     let table = document.getElementById("contactList");

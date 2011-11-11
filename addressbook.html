@@ -6,6 +6,9 @@
   background-color: blue;
   color: white;
 }
+#contactList td {
+  cursor: pointer;
+}
 </style>
 </head>
 <body onload="AB.init()">
@@ -16,9 +19,7 @@
 <div>
   <label for="filter">Search Addressbook:</label>
   <input type="text" id="filter">
-</div>
-<div>
-  <button id="new" onclick="return AB.newContactForm();">
+  <button id="newContactButton" onclick="return AB.newContactForm();">
     Create new contact
   </button>
 </div>
