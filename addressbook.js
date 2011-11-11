@@ -50,6 +50,15 @@ let AB = {
   },
 
   newContactForm: function newContactForm() {
+    AB.currentContact = {name: {},
+                         phoneNumbers: [],
+                         emails: [],
+                         addresses: [],
+                         organizations: [],
+                         photos: [],
+                         categories: [],
+                         urls: []};
+
     let table = document.getElementById("contactList");
 
     let old_row = table.querySelector(".selected");
@@ -138,15 +147,14 @@ let AB = {
     return false;
   },
 
+  cancelNewContact: function cancelNewContact() {
+    AB.currentContact = null;
+    AB.closeContactEditForm();
+    return false;
+  },
+
   createNewContact: function createNewContact() {
-    let record = {name: {},
-                  phoneNumbers: [],
-                  emails: [],
-                  addresses: [],
-                  organizations: [],
-                  photos: [],
-                  categories: [],
-                  urls: []};
+    let record = AB.currentContact;
 
     let form = document.getElementById("contactEdit");
     let fields = form.elements;
@@ -255,7 +263,7 @@ let AB = {
     AB.closeContactEditForm();
 
     console.log("Should get one contact:", contacts.length);
-    let contact = contacts[0];
+    let contact = AB.currentContact = contacts[0];
 
     document.getElementById("view.displayName").textContent =
       contact.displayName;
