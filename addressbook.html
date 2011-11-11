@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
+<style>
+.selected {
+  background-color: blue;
+  color: white;
+}
+</style>
 </head>
 <body onload="AB.init()">
 
@@ -17,39 +23,74 @@
   </button>
 </div>
 <p id="errorMsg"></p>
-<form id="new_contact"
-      style="width: 300px; display: none;">
-  <!-- Name stuff -->
-  <fieldset name="name">
-    <input type="text" id="name.givenName" placeholder="First name">
-    <input type="text" id="name.familyName" placeholder="Surname">
-    <!-- TODO expandy thingy for other attributes -->
-  </fieldset>
-  <fieldset name="phoneNumbers" id="fieldset.phoneNumbers">
-    <!-- Dynamically created content goes here. -->
-    <button id="phoneNumbers.add" onclick="return AB.newSimpleListEntry('phoneNumbers');">+</button>
-  </fieldset>
-  <fieldset name="emails" id="fieldset.emails">
-    <!-- Dynamically created content goes here. -->
-    <button id="emails.add" onclick="return AB.newSimpleListEntry('emails');">+</button>
-  </fieldset>
-  <fieldset name="addresses" id="fieldset.addresses">
-  <!-- TODO this can't be a simple list entry -->
-    <!-- Dynamically created content goes here. -->
-    <button id="addresses.add" onclick="return AB.newSimpleListEntry(addresses');">+</button>
-  </fieldset>
-  <textarea id="note" placeholder="Notes"></textarea>
-  <div>
-    <button onclick="return AB.cancelNewContactForm();">Cancel</button>
-    <button onclick="return AB.createNewContact();">Create</button>
-  </div>
+
+<div style="display: -moz-box; -moz-box-orient: horizontal">
+  <!-- XXX semantically I'm using this like a <ul> right now -->
+  <table id="contactList" onclick="return AB.onContactListClick(event);">
+    <tbody>
+      <!-- Dynamically created content goes here. -->
+    </tbody>
+  </table>
+
+  <section id="contactView" style="display: none;">
+    <h1 id="view.displayName">Ohai there</h1>
+
+    <h2>Phone</h2>
+    <table id="view.phoneNumbers">
+      <tbody>
+        <!-- Dynamically created content goes here. -->
+      </tbody>
+    </table>
+
+    <h2>Email</h2>
+    <table id="view.emails">
+      <tbody>
+        <!-- Dynamically created content goes here. -->
+      </tbody>
+    </table>
+
+    <h2>Addresses</h2>
+    <table id="view.addresses">
+      <tbody>
+        <!-- Dynamically created content goes here. -->
+      </tbody>
+    </table>
+
+    <div>
+      <button onclick="return AB.deleteContact();">Delete</button>
+      <button onclick="">Edit</button>
+    </div>
+  </section>
+
+  <form id="contactAdd"
+        style="width: 300px; display: none;">
+    <!-- Name stuff -->
+    <fieldset name="name">
+      <input type="text" id="name.givenName" placeholder="First name">
+      <input type="text" id="name.familyName" placeholder="Surname">
+      <!-- TODO expandy thingy for other attributes -->
+    </fieldset>
+    <fieldset name="phoneNumbers" id="fieldset.phoneNumbers">
+      <!-- Dynamically created content goes here. -->
+      <button id="phoneNumbers.add" onclick="return AB.newSimpleListEntry('phoneNumbers');">+</button>
+    </fieldset>
+    <fieldset name="emails" id="fieldset.emails">
+      <!-- Dynamically created content goes here. -->
+      <button id="emails.add" onclick="return AB.newSimpleListEntry('emails');">+</button>
+    </fieldset>
+    <fieldset name="addresses" id="fieldset.addresses">
+      <!-- TODO this can't be a simple list entry -->
+      <!-- Dynamically created content goes here. -->
+      <button id="addresses.add" onclick="return AB.newSimpleListEntry(addresses');">+</button>
+    </fieldset>
+    <textarea id="note" placeholder="Notes"></textarea>
+    <div>
+      <button onclick="return AB.cancelNewContactForm();">Cancel</button>
+      <button onclick="return AB.createNewContact();">Create</button>
+    </div>
 </form>
 
-<table id="contactlist">
-<tbody>
-  <!-- Dynamically created content goes here. -->
-</tbody>
-</table>
+</div>
 
 </body>
 </html>

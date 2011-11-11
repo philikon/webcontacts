@@ -292,13 +292,18 @@ Contacts.prototype = {
   },
 
   update: function update(successCb, errorCb, contact) {
+    //TODO verify record, like in create()
     this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
+      debug("Going to update", contact.id);
       store.put(contact);
     }, successCb, errorCb);
   },
 
   delete: function delete_(successCb, errorCb, id) {
+    //TODO verify id
+    // what should happen when 'id' doesn't exist?
     this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
+      debug("Going to delete", id);
       store.delete(id);
     }, successCb, errorCb);
   }

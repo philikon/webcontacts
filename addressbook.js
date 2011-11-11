@@ -50,7 +50,23 @@ let AB = {
   },
 
   newContactForm: function newContactForm() {
-    document.getElementById("new_contact").style.display = "block";
+    let table = document.getElementById("contactList");
+
+    let old_row = table.querySelector(".selected");
+    if (old_row) {
+      old_row.classList.remove("selected");
+    }
+
+    let tr = document.createElement("tr");
+    tr.classList.add("selected");
+    let td = document.createElement("td");
+    td.textContent = "(New contact)";
+    tr.appendChild(td);
+    let tbody = table.tBodies[0];
+    tbody.insertBefore(tr, tbody.firstChild);
+
+    document.getElementById("contactAdd").style.display = "block";
+    document.getElementById("contactView").style.display = "none";
     return false;
   },
 
@@ -100,7 +116,13 @@ let AB = {
   },
 
   cancelNewContactForm: function cancelNewContactForm() {
-    let form = document.getElementById("new_contact");
+    let table = document.getElementById("contactList");
+    let new_row = table.querySelector(".selected");
+    if (new_row) {
+      new_row.parentNode.removeChild(new_row);
+    }
+
+    let form = document.getElementById("contactAdd");
     form.reset();
     form.style.display = "none";
     return false;
@@ -116,7 +138,7 @@ let AB = {
                   categories: [],
                   urls: []};
 
-    let form = document.getElementById("new_contact");
+    let form = document.getElementById("contactAdd");
     let fields = form.elements;
     for (let i = 0; i < fields.length; i++) {
       let field = fields[i];
@@ -142,9 +164,10 @@ let AB = {
   },
 
   hideNewContactForm: function hideNewContactForm() {
+    console.log("Successfully created new contact.");
     document.getElementById("errorMsg").textContent = "";
 
-    let form = document.getElementById("new_contact");
+    let form = document.getElementById("contactAdd");
     form.style.display = "none";
     form.reset();
 
@@ -153,11 +176,10 @@ let AB = {
       let field = fields[i];
       field.disabled = false;
     }
-
-    AB.updateContactListing();
   },
 
   displayErrorMsg: function displayErrorMsg(error) {
+    console.error("There was an error adding contact", error);
     document.getElementById("errorMsg").textContent =
       "There was an error adding the contact to your addressbook.";
 
@@ -175,7 +197,8 @@ let AB = {
   },
 
   displayContactList: function displayContactList(contacts) {
-    let table = document.getElementById("contactlist");
+    // Nuke existing content from the table.
+    let table = document.getElementById("contactList");
     while (table.tBodies.length) {
       table.removeChild(table.tBodies[0]);
     }
@@ -186,20 +209,102 @@ let AB = {
       tbody.appendChild(tr);
       let td = document.createElement("td");
       tr.appendChild(td);
-      td.textContent = "";
+      td.textContent = "(No contacts)";
     }
 
     for (let i = 0; i < contacts.length; i++) {
       let contact = contacts[i];
 
       let tr = document.createElement("tr");
+      tr.id = contact.id;
       tbody.appendChild(tr);
       let td = document.createElement("td");
       tr.appendChild(td);
       td.textContent = contact.displayName;
-      td.id = contact.id;
     }
     table.appendChild(tbody);
+  },
+
+  onContactListClick: function onContactListClick(event) {
+    let row = event.target;
+    while (row.localName != "tr") {
+      row = row.parentNode;
+      if (!row) {
+        return;
+      }
+    }
+
+    let table = document.getElementById("contactList");
+    let old_row = table.querySelector(".selected");
+    if (old_row) {
+      old_row.classList.remove("selected");
+    }
+
+    row.classList.add("selected");
+    let contact_id = row.id;
+    console.log("Selected", contact_id);
+
+    window.navigator.mozContacts.find(["id", /*ALL OF THEM*/],
+                                      AB.displayContactDetails,
+                                      function (error) { /* TODO */ },
+                                      {id: contact_id});
+  },
+
+  displayContactDetails: function displayContactDetails(contacts) {
+    AB.hideNewContactForm();
+
+    console.log("Should get one contact:", contacts.length);
+    let contact = contacts[0];
+
+    document.getElementById("view.displayName").textContent =
+      contact.displayName;
+
+    let tbody = document.createElement("tbody");
+    ["phoneNumbers", "emails", "addresses"].forEach(function (field) {
+      let table = document.getElementById("view." + field);
+      while (table.tBodies.length) {
+        table.removeChild(table.tBodies[0]);
+      }
+      let tbody = document.createElement("tbody");
+
+      contact[field].forEach(function (entry) {
+        if (!entry.value) {
+          return;
+        }
+        let tr = document.createElement("tr");
+        let type_label = document.createElement("th");
+        type_label.textContent = FIELD_TYPES[entry.type];
+        tr.appendChild(type_label);
+        let value = document.createElement("td");
+        value.textContent = entry.value;
+        tr.appendChild(value);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+    });
+
+    document.getElementById("contactView").style.display = "block";
+  },
+
+  deleteContact: function deleteContact() {
+    let table = document.getElementById("contactList");
+    let row = table.querySelector(".selected");
+    if (!row) {
+      console.log("Could not find any selected element.");
+      return false;
+    }
+    let contact_id = row.id;
+    window.navigator.mozContacts.delete(AB.contactDeleted,
+                                        AB.displayErrorMsg,
+                                        contact_id);
+    return false;
+  },
+
+  contactDeleted: function contactDeleted() {
+    let table = document.getElementById("contactList");
+    let row = table.querySelector(".selected");
+    row.parentNode.removeChild(row);
+    document.getElementById("contactView").style.display = "none";
   },
 
 };
