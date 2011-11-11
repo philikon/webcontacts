@@ -66,7 +66,7 @@ let AB = {
     let tbody = table.tBodies[0];
     tbody.insertBefore(tr, tbody.firstChild);
 
-    document.getElementById("contactAdd").style.display = "block";
+    document.getElementById("contactEdit").style.display = "block";
     document.getElementById("contactView").style.display = "none";
     return false;
   },
@@ -116,7 +116,7 @@ let AB = {
     return false;
   },
 
-  closeNewContactForm: function closeNewContactForm() {
+  closeContactEditForm: function closeContactEditForm() {
     document.getElementById("errorMsg").textContent = "";
 
     let table = document.getElementById("contactList");
@@ -125,7 +125,7 @@ let AB = {
       new_row.parentNode.removeChild(new_row);
     }
 
-    let form = document.getElementById("contactAdd");
+    let form = document.getElementById("contactEdit");
     form.reset();
     form.style.display = "none";
 
@@ -148,7 +148,7 @@ let AB = {
                   categories: [],
                   urls: []};
 
-    let form = document.getElementById("contactAdd");
+    let form = document.getElementById("contactEdit");
     let fields = form.elements;
     for (let i = 0; i < fields.length; i++) {
       let field = fields[i];
@@ -175,7 +175,7 @@ let AB = {
   },
 
   contactCreated: function contactCreated() {
-    AB.closeNewContactForm();
+    AB.closeContactEditForm();
     AB.updateContactListing();
   },
 
@@ -252,7 +252,7 @@ let AB = {
   },
 
   displayContactDetails: function displayContactDetails(contacts) {
-    AB.closeNewContactForm();
+    AB.closeContactEditForm();
 
     console.log("Should get one contact:", contacts.length);
     let contact = contacts[0];
