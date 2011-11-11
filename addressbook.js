@@ -72,11 +72,11 @@ let AB = {
   },
 
   newSimpleListEntry: function newSimpleListEntry(kind) {
-    let fieldset = document.getElementById("fieldset." + kind);
+    let fieldset = document.getElementById("edit.fieldset." + kind);
     // This number is kind of arbitrary.
     let new_index = fieldset.childNodes.length - 1;
 
-    let kind_plus_index = kind + "." + new_index;
+    let kind_plus_index = "edit." + kind + "." + new_index;
     let div = document.createElement("div");
     div.id = kind_plus_index;
 
@@ -104,13 +104,13 @@ let AB = {
     div.appendChild(button);
     //TODO hide button if it's the last entry
 
-    let addbutton = document.getElementById(kind + ".add");
+    let addbutton = document.getElementById("edit." + kind + ".add");
     fieldset.insertBefore(div, addbutton);
     return false;
   },
 
   removeSimpleListEntry: function removeMultiListEntry(kind, index) {
-    let kind_plus_index = kind + "." + index;
+    let kind_plus_index = "edit." + kind + "." + index;
     let div = document.getElementById(kind_plus_index);
     div.parentNode.removeChild(div);
     return false;
@@ -155,9 +155,10 @@ let AB = {
       if (["fieldset", "button"].indexOf(field.localName) != -1) {
         continue;
       }
+      let property = field.id.slice("edit.".length);
       console.log(field.localName + "#" + field.id, "->", field.value);
       if (field.value) {
-        setAttrByPath(record, field.id, field.value);
+        setAttrByPath(record, property, field.value);
       }
       field.disabled = true;
     }
@@ -167,10 +168,15 @@ let AB = {
     record.displayName = record.name.givenName + " " + record.name.familyName;
 
     console.log("Adding to the addressbook", record);
-    window.navigator.mozContacts.create(AB.closeNewContactForm,
+    window.navigator.mozContacts.create(AB.contactCreated,
                                         AB.displayErrorMsg,
                                         record);
     return false;
+  },
+
+  contactCreated: function contactCreated() {
+    AB.closeNewContactForm();
+    AB.updateContactListing();
   },
 
   displayErrorMsg: function displayErrorMsg(error) {

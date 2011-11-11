@@ -66,24 +66,24 @@
         style="width: 300px; display: none;">
     <!-- Name stuff -->
     <fieldset name="name">
-      <input type="text" id="name.givenName" placeholder="First name">
-      <input type="text" id="name.familyName" placeholder="Surname">
+      <input type="text" id="edit.name.givenName" placeholder="First name">
+      <input type="text" id="edit.name.familyName" placeholder="Surname">
       <!-- TODO expandy thingy for other attributes -->
     </fieldset>
-    <fieldset name="phoneNumbers" id="fieldset.phoneNumbers">
+    <fieldset name="phoneNumbers" id="edit.fieldset.phoneNumbers">
       <!-- Dynamically created content goes here. -->
-      <button id="phoneNumbers.add" onclick="return AB.newSimpleListEntry('phoneNumbers');">+</button>
+      <button id="edit.phoneNumbers.add" onclick="return AB.newSimpleListEntry('phoneNumbers');">+</button>
     </fieldset>
-    <fieldset name="emails" id="fieldset.emails">
+    <fieldset name="emails" id="edit.fieldset.emails">
       <!-- Dynamically created content goes here. -->
-      <button id="emails.add" onclick="return AB.newSimpleListEntry('emails');">+</button>
+      <button id="edit.emails.add" onclick="return AB.newSimpleListEntry('emails');">+</button>
     </fieldset>
-    <fieldset name="addresses" id="fieldset.addresses">
+    <fieldset name="addresses" id="edit.fieldset.addresses">
       <!-- TODO this can't be a simple list entry -->
       <!-- Dynamically created content goes here. -->
-      <button id="addresses.add" onclick="return AB.newSimpleListEntry(addresses');">+</button>
+      <button id="edit.addresses.add" onclick="return AB.newSimpleListEntry(addresses');">+</button>
     </fieldset>
-    <textarea id="note" placeholder="Notes"></textarea>
+    <textarea id="edit.note" placeholder="Notes"></textarea>
     <div>
       <button onclick="return AB.closeNewContactForm();">Cancel</button>
       <button onclick="return AB.createNewContact();">Create</button>
