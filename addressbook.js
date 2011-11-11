@@ -58,6 +58,7 @@ let AB = {
     }
 
     let tr = document.createElement("tr");
+    tr.id = "newContactRow";
     tr.classList.add("selected");
     let td = document.createElement("td");
     td.textContent = "(New contact)";
@@ -115,9 +116,11 @@ let AB = {
     return false;
   },
 
-  cancelNewContactForm: function cancelNewContactForm() {
+  closeNewContactForm: function closeNewContactForm() {
+    document.getElementById("errorMsg").textContent = "";
+
     let table = document.getElementById("contactList");
-    let new_row = table.querySelector(".selected");
+    let new_row = table.querySelector("#newContactRow");
     if (new_row) {
       new_row.parentNode.removeChild(new_row);
     }
@@ -125,6 +128,13 @@ let AB = {
     let form = document.getElementById("contactAdd");
     form.reset();
     form.style.display = "none";
+
+    let fields = form.elements;
+    for (let i = 0; i < fields.length; i++) {
+      let field = fields[i];
+      field.disabled = false;
+    }
+
     return false;
   },
 
@@ -157,25 +167,10 @@ let AB = {
     record.displayName = record.name.givenName + " " + record.name.familyName;
 
     console.log("Adding to the addressbook", record);
-    window.navigator.mozContacts.create(AB.hideNewContactForm,
+    window.navigator.mozContacts.create(AB.closeNewContactForm,
                                         AB.displayErrorMsg,
                                         record);
     return false;
-  },
-
-  hideNewContactForm: function hideNewContactForm() {
-    console.log("Successfully created new contact.");
-    document.getElementById("errorMsg").textContent = "";
-
-    let form = document.getElementById("contactAdd");
-    form.style.display = "none";
-    form.reset();
-
-    let fields = form.elements;
-    for (let i = 0; i < fields.length; i++) {
-      let field = fields[i];
-      field.disabled = false;
-    }
   },
 
   displayErrorMsg: function displayErrorMsg(error) {
@@ -251,7 +246,7 @@ let AB = {
   },
 
   displayContactDetails: function displayContactDetails(contacts) {
-    AB.hideNewContactForm();
+    AB.closeNewContactForm();
 
     console.log("Should get one contact:", contacts.length);
     let contact = contacts[0];
