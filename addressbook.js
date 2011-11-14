@@ -259,7 +259,7 @@ let AB = {
     window.navigator.mozContacts.find(["id", /*ALL OF THEM*/],
                                       AB.displayContactDetails,
                                       function (error) { /* TODO */ },
-                                      {id: contact_id});
+                                      {filter: {id: contact_id}});
   },
 
   displayContactDetails: function displayContactDetails(contacts) {

@@ -173,8 +173,16 @@ Contacts.prototype = {
    */
   createSchema: function createSchema(db) {
     let objectStore = db.createObjectStore(STORE_NAME, {keyPath: "id"});
+    objectStore.createIndex("id", "id", { unique: true });
+    objectStore.createIndex("displayName", "displayName", { unique: false });
+
+    //TODO I want to be doing this:
     objectStore.createIndex("familyName", "name.familyName", { unique: false });
     objectStore.createIndex("givenName", "name.givenName", { unique: false });
+
+    // TODO I also want to do this (see bug 692630):
+    // objectStore.createIndex("email", "emails", { multientry: true, unique: false });
+
     //TODO moar indexes here.
     debug("Created object stores and indexes");
   },
@@ -200,7 +208,7 @@ Contacts.prototype = {
       let store = txn.objectStore(STORE_NAME);
 
       txn.oncomplete = function (event) {
-        debug("Transaction complete. Returning to callback.");
+        debug("Transaction cmoplete. Returning to callback.");
         successCb(txn.result);
       };
       // The transaction will automatically be aborted.
@@ -219,7 +227,7 @@ Contacts.prototype = {
    * WebContacts API
    */
 
-  find: function find(fields, successCb, failureCb, filter) {
+  find: function find(fields, successCb, failureCb, options) {
     //TODO PENDING_OPERATION_ERROR -- the transactionality of indexedDB should
     // give us this for free
     if (!successCb) {
@@ -242,21 +250,19 @@ Contacts.prototype = {
       let request;
 
       let filter_keys = [];
-      if (filter) {
-        filter_keys = Object.keys(filter);
+      if (options && options.filter) {
+        filter_keys = Object.keys(options.filter);
       }
+      //TODO check whether filter_keys are valid filters.
 
+      // Short path when we're just querying by 1 attribute
       if (filter_keys.length == 1) {
         let key = filter_keys[0];
-        let value = filter[key];
+        let value = options.filter[key];
         //TODO check whether filter_key is a valid index;
-        if (key == "id") {
-          request = store.getAll(value);
-        } else {
-          debug("Getting index", key);
-          let index = store.index(key);;
-          request = index.getAll(value);
-        }
+        debug("Getting index", key);
+        let index = store.index(key);
+        request = index.getAll(value);
       } else if (filter_keys.length > 1) {
         //TODO implement. for now just return everything.
         request = store.getAll();
@@ -265,6 +271,7 @@ Contacts.prototype = {
       }
 
       request.onsuccess = function (event) {
+        console.log("Request successful.", event.target.result);
         txn.result = event.target.result;
       };
     }, successCb, failureCb);

@@ -55,7 +55,8 @@ let steps = [
   function () {
     console.log("Deleting database");
     let request = window.mozIndexedDB.deleteDatabase("contacts");
-    request.onsuccess = request.onerror = function () {
+    request.onsuccess = request.onerror = function (event) {
+      console.log("Deleted the database", event.errorCode);
       next();
     };
   },
@@ -92,8 +93,9 @@ let steps = [
       assert(contacts[0].displayName == sample_contact.displayName, "Same displayName");
       assert(contacts[0].ims.length == 0, "No IMS info.");
       next();
-    }, onFailure, {id: sample_contact.id});
+    }, onFailure, {filter: {id: sample_contact.id}});
   },
+/*
   function () {
     console.log("Retrieving a specific contact by givenName...");
     window.navigator.mozContacts.find(fields, function (contacts) {
@@ -102,8 +104,9 @@ let steps = [
       assert(contacts[0].displayName == sample_contact.displayName, "Same displayName");
       assert(contacts[0].ims.length == 0, "No IMS info.");
       next();
-    }, onFailure, {givenName: sample_contact.name.givenName});
+    }, onFailure, {filter: {givenName: sample_contact.name.givenName}});
   },
+*/
   function () {
     sample_contact.ims.push({type: "IRC",
                              value: "philikon",
