@@ -127,6 +127,15 @@ let steps = [
     }, onFailure, sample_contact);
   },
   function () {
+    console.log("Searching contacts by query...");
+    window.navigator.mozContacts.find(fields, function (contacts) {
+      assert(contacts.length == 1, "Found exactly 1 contact.");
+      assert(contacts[0].id == sample_contact.id, "Same ID");
+      assert(contacts[0].displayName == sample_contact.displayName, "Same displayName");
+      next();
+    }, onFailure, {search: {query: "phil", fields: ["displayName", "email"]}});
+  },
+  function () {
     console.log("Deleting contact", sample_contact.id);
     window.navigator.mozContacts.delete(function () {
       window.navigator.mozContacts.find(fields, function (contacts) {

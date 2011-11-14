@@ -208,7 +208,7 @@ Contacts.prototype = {
       let store = txn.objectStore(STORE_NAME);
 
       txn.oncomplete = function (event) {
-        debug("Transaction cmoplete. Returning to callback.");
+        debug("Transaction complete. Returning to callback.");
         successCb(txn.result);
       };
       // The transaction will automatically be aborted.
@@ -227,6 +227,26 @@ Contacts.prototype = {
    * WebContacts API
    */
 
+  /**
+   * @param fields
+   *        Array naming which fields the caller is interested in.
+   * @param successCb
+   *        Callback function to invoke with result array.
+   * @param failureCb [optional]
+   *        Callback function to invoke when there was an error.
+   * @param options [optional]
+   *        Object specifying search options. Possible attributes:
+   *        - filter
+   *          Object specifying properties and their values to filter by,
+   *          e.g. {lastName: "Smith"}. See also
+   *         http://specs.wacapps.net/2.0/jun2011/deviceapis/contact.html#::contact::ContactFilter
+   *        - search
+   *          Object specifying which properties to search for a given string,
+   *          e.g. {query: "john", fields: ["displayName", "email"]}
+   *        Possibly supported in the future:
+   *        - batching
+   *        - sorting by specific keys
+   */
   find: function find(fields, successCb, failureCb, options) {
     //TODO PENDING_OPERATION_ERROR -- the transactionality of indexedDB should
     // give us this for free
@@ -244,37 +264,82 @@ Contacts.prototype = {
       return;
     }
 
+    //TODO verify fields, options
+
+    let self = this;
     this.newTxn(IDBTransaction.READ_ONLY, function (txn, store) {
-      txn.result = [];
-
-      let request;
-
-      let filter_keys = [];
       if (options && options.filter) {
-        filter_keys = Object.keys(options.filter);
-      }
-      //TODO check whether filter_keys are valid filters.
-
-      // Short path when we're just querying by 1 attribute
-      if (filter_keys.length == 1) {
-        let key = filter_keys[0];
-        let value = options.filter[key];
-        //TODO check whether filter_key is a valid index;
-        debug("Getting index", key);
-        let index = store.index(key);
-        request = index.getAll(value);
-      } else if (filter_keys.length > 1) {
-        //TODO implement. for now just return everything.
-        request = store.getAll();
+        self._findWithFilter(txn, store, options.filter);
+      } else if (options && options.search) {
+        self._findWithSearch(txn, store, options.search);
       } else {
-        request = store.getAll();
+        self._findAll(txn, store);
       }
-
-      request.onsuccess = function (event) {
-        console.log("Request successful.", event.target.result);
-        txn.result = event.target.result;
-      };
     }, successCb, failureCb);
+  },
+
+  _findWithFilter: function _findWithFilter(txn, store, filter) {
+    let filter_keys = Object.keys(filter);
+    //TODO check whether filter_keys are valid filters.
+
+    let request;
+    if (!filter_keys.length) {
+      //TODO return error
+      debug("No filters provided!");
+      return;
+    } 
+
+    // Query records by first filter. Apply any extra filters later.
+    let key = filter_keys.shift();
+    let value = filter[key];
+    //TODO check whether filter_key is a valid index;
+    debug("Getting index", key);
+    let index = store.index(key);
+    request = index.getAll(value);
+
+    request.onsuccess = function (event) {
+      console.log("Request successful.", event.target.result);
+      txn.result = event.target.result;
+      //TODO filter by additional keys
+    };
+  },
+
+  _findWithSearch: function _findWithSearch(txn, store, search) {
+    let query = search.query.toLowerCase();
+
+    store.getAll().onsuccess = function (event) {
+      console.log("Request successful.", event.target.result);
+      txn.result = event.target.result.filter(function (record) {
+        for (let i = 0; i < search.fields.length; i++) {
+          let field = search.fields[i];
+          let value;
+          switch (field) {
+            case "familyName":
+            case "givenName":
+              value = record.name[field];
+              break;
+            case "email":
+            case "phoneNumber":
+            case "ims":
+              // HACK: Join all values together into a string.
+              value = [f.value for each (f in record[field])].join("\n");
+            default:
+              value = record[field];
+          }
+          if (value.toLowerCase().indexOf(query) != -1) {
+            return true;
+          }
+        }
+        return false;
+      });
+    };
+  },
+
+  _findAll: function _findAll(txn, store) {
+    store.getAll().onsuccess = function (event) {
+      console.log("Request successful.", event.target.result);
+      txn.result = event.target.result;
+    };
   },
 
   create: function create(successCb, errorCb, contact) {

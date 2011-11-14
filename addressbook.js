@@ -319,4 +319,14 @@ let AB = {
     document.getElementById("contactView").style.display = "none";
   },
 
+  onFilterKeyUp: function onFilterKeyUp(event) {
+    console.log(event.keyCode, event.charCode, event.target.value);
+    let query = event.target.value;
+    let fields = ["displayName"]; //TODO
+    window.navigator.mozContacts.find(["id", /*ALL OF THEM*/],
+                                      AB.displayContactList,
+                                      function (error) { /* TODO */ },
+                                      {search: {query: query, fields: fields}});
+  }
+
 };
