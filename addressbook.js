@@ -327,6 +327,11 @@ let AB = {
                                       AB.displayContactList,
                                       function (error) { /* TODO */ },
                                       {search: {query: query, fields: fields}});
-  }
+  },
+
+  clearFilter: function clearFilter() {
+    document.getElementById("filter").value = "";
+    AB.updateContactListing();
+  },
 
 };

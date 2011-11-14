@@ -19,6 +19,7 @@
 <div>
   <label for="filter">Search Addressbook:</label>
   <input type="text" id="filter" onkeyup="return AB.onFilterKeyUp(event);">
+  <button id="clearFilterButton" onclick="return AB.clearFilter();">X</button>
   <button id="newContactButton" onclick="return AB.newContactForm();">
     Create new contact
   </button>
