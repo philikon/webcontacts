@@ -1,22 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
+<style>
+html, body {
+  margin: 0;
+  font-family: helvetica;
+  height: 100%;
+  font-size: 12px;
+}
+
+#topRow {
+  padding: 5px 10px;
+  background-color: #B2CCFF;
+  height: 25px;
+  font-size: 12px;
+}
+
+#mainContent {
+  text-align: center;
+  border: 1px solid black;
+  width: -moz-calc(100% - 2px);
+  height: auto;
+  min-height: -moz-calc(100% - 75px);
+}
+
+#progressBar {
+  width: 200px;
+}
+
+footer {
+  padding: 10px 10px;
+  font-size: 12px;
+  background-color: #B2CCFF;
+  height: 18px;
+}
+</style>
 </head>
 <body>
 
-<button id="startButton" onclick="startFBImport();">
-  Import Facebook contacts
-</button>
-
-<p>Note: Due to a limitation in the Facebook API, only your friends' names can be imported.</p>
-
-<div id="feedback">
-  <label for="progressBar">Progress:</label>
-  <progress id="progressBar"></progress>
-  <p id="statusMsg">(Not started yet.)</p>
+<div id="topRow">
+  <button id="startButton" onclick="startFBImport();">
+    Import Facebook contacts
+  </button>
 </div>
 
-<a href="addressbook.html">Back to the address book.</a>
+<div id="mainContent">
+  <p>Note: Due to a limitation in the Facebook API, your friend's email addresses, phone numbers, and physical addresses cannot be imported.</p>
+
+  <div id="feedback">
+    <progress id="progressBar"></progress>
+    <p id="statusMsg">(Not started yet.)</p>
+  </div>
+</div>
+
+<footer>
+  <a href="addressbook.html">Back to the address book.</a>
+</footer>
 
 <div id="fb-root"></div>
 
