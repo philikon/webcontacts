@@ -44,19 +44,25 @@ let AB = {
 
   init: function init() {
     AB.updateContactListing();
-    AB.newSimpleListEntry("phoneNumbers");
-    AB.newSimpleListEntry("emails");
-    AB.newSimpleListEntry("addresses");
   },
 
   newContactForm: function newContactForm() {
     document.getElementById("newContactButton").disabled = true;
 
-    AB.currentContact = {name: {},
+    AB.currentContact = {displayName: "",
+                         name: {familyName: "",
+                                givenName: "",
+                                honorificPrefix: "",
+                                honorificSuffic: "",
+                                middleName: ""},
+                         nickname: "",
                          phoneNumbers: [],
                          emails: [],
                          addresses: [],
+                         ims: [],
                          organizations: [],
+                         birthday: null,
+                         note: "",
                          photos: [],
                          categories: [],
                          urls: []};
@@ -77,6 +83,10 @@ let AB = {
     let tbody = table.tBodies[0];
     tbody.insertBefore(tr, tbody.firstChild);
 
+    AB.newSimpleListEntry("phoneNumbers");
+    AB.newSimpleListEntry("emails");
+    AB.newSimpleListEntry("addresses");
+
     document.getElementById("contactEdit").style.display = "block";
     document.getElementById("contactView").style.display = "none";
     return false;
@@ -84,8 +94,9 @@ let AB = {
 
   newSimpleListEntry: function newSimpleListEntry(kind) {
     let fieldset = document.getElementById("edit.fieldset." + kind);
-    // This number is kind of arbitrary.
-    let new_index = fieldset.childNodes.length - 1;
+    let kind_list = AB.currentContact[kind];
+    let new_index = kind_list.length;
+    kind_list[new_index] = {type: "", value: "", pref: false};
 
     let kind_plus_index = "edit." + kind + "." + new_index;
     let div = document.createElement("div");
@@ -109,6 +120,7 @@ let AB = {
     div.appendChild(input);
 
     let button = document.createElement("button");
+    button.id = kind_plus_index + ".remove";
     button.setAttribute("onclick", "return AB.removeSimpleListEntry('" +
                                    kind + "', " + new_index + ");");
     button.textContent = "-";
@@ -124,6 +136,26 @@ let AB = {
     let kind_plus_index = "edit." + kind + "." + index;
     let div = document.getElementById(kind_plus_index);
     div.parentNode.removeChild(div);
+
+    let kind_list = AB.currentContact[kind];
+    kind_list.splice(index, 1);
+
+    // Rename all following fields.
+console.info("Removing", kind, index);
+    let prefix = "edit." + kind + ".";
+    for (let i = index; i < kind_list.length; i++) {
+      let old_prefix = prefix + (i + 1);
+      let new_prefix = prefix + i;
+console.info("Renaming", old_prefix, "to", new_prefix);
+      document.getElementById(old_prefix).id = new_prefix;
+      document.getElementById(old_prefix + ".type").id = new_prefix + ".type";
+      document.getElementById(old_prefix + ".value").id = new_prefix + ".value";
+      let button = document.getElementById(old_prefix + ".remove");
+      button.id = new_prefix + ".remove";
+      button.setAttribute("onclick", "return AB.removeSimpleListEntry('" +
+                                     kind + "', " + i + ");");
+    }
+
     return false;
   },
 
