@@ -260,7 +260,17 @@ let AB = {
       }
       field.disabled = true;
     }
-    //TODO filter arrays
+
+    // Filter invalid entries from list.
+    SIMPLE_LIST_FIELDS.forEach(function (field) {
+      let list = record[field];
+      if (!list) {
+        return;
+      }
+      record[field] = list.filter(function (entry) {
+        return entry.value;
+      });
+    });
 
     //TODO this is a locale setting
     record.displayName = record.name.givenName + " " + record.name.familyName;
