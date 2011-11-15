@@ -2,12 +2,69 @@
 <html>
 <head>
 <style>
+html, body {
+  margin: 0;
+  font-family: helvetica;
+  height: 100%;
+  font-size: 12px;
+}
+
+#topRow {
+  padding: 5px 10px;
+  background-color: #B2CCFF;
+  height: 25px;
+  font-size: 12px;
+}
+
+#newContactButton {
+  float: right;
+}
+
+#mainBox {
+  display: -moz-box;
+  -moz-box-orient: horizontal;
+  -moz-flex: 1;
+  border: 1px solid black;
+  width: -moz-calc(100% - 2px);
+  height: auto;
+  min-height: -moz-calc(100% - 75px);
+}
+
+#leftSide {
+  border-right: 1px solid black;
+  height: 100%;
+}
+
+#contactList {
+  font-size: 12px;
+}
+
+section h1 {
+  font-size: 25px;
+}
+
+section h2 {
+  font-size: 15px;
+}
+
+#contactView {
+  margin-left: 20px;
+}
+
 .selected {
   background-color: blue;
   color: white;
 }
+
 #contactList td {
   cursor: pointer;
+}
+
+footer {
+  padding: 10px 10px;
+  font-size: 12px;
+  background-color: #B2CCFF;
+  height: 18px;
 }
 </style>
 </head>
@@ -16,23 +73,24 @@
 <script type="application/javascript;version=1.8" src="contacts.js"></script>
 <script type="application/javascript;version=1.8" src="addressbook.js"></script>
 
-<div>
+<div id="topRow">
   <label for="filter">Search Addressbook:</label>
-  <input type="text" id="filter" onkeyup="return AB.onFilterKeyUp(event);">
+  <input type="search" id="filter" onkeyup="return AB.onFilterKeyUp(event);">
   <button id="clearFilterButton" onclick="return AB.clearFilter();">X</button>
   <button id="newContactButton" onclick="return AB.newContactForm();">
     Create new contact
   </button>
 </div>
-<p id="errorMsg"></p>
 
-<div style="display: -moz-box; -moz-box-orient: horizontal">
+<div id="mainBox">
   <!-- XXX semantically I'm using this like a <ul> right now -->
+  <div id="leftSide">
   <table id="contactList" onclick="return AB.onContactListClick(event);">
     <tbody>
       <!-- Dynamically created content goes here. -->
     </tbody>
   </table>
+  </div>
 
   <section id="contactView" style="display: none;">
     <h1 id="view.displayName">Ohai there</h1>
@@ -120,12 +178,12 @@
       <button onclick="return AB.cancelContactEditForm();">Cancel</button>
       <button onclick="return AB.saveContact();">Save</button>
     </div>
-</form>
-
+    <p id="errorMsg"></p>
+  </form>
 </div>
 
 <footer>
-  <a href="fbimport.html">Import Facebook friends</a>
+  More: <a href="fbimport.html">Import Facebook friends</a>
 </footer>
 
 </body>
