@@ -48,6 +48,10 @@ let AB = {
     AB.updateContactListing();
   },
 
+  /**
+   * Prepare internal data and UI for the editing a new contact.
+   * Heavy lifting is provided by the generic edit form.
+   */
   newContactForm: function newContactForm() {
     document.getElementById("newContactButton").disabled = true;
 
@@ -88,6 +92,10 @@ let AB = {
     return this.editContact();
   },
 
+  /**
+   * Show the edit form for the current contact. This would either be the one
+   * that's currently displayed or a new one put in place by `newContactForm()`.
+   */
   editContact: function editContact() {
     let contact = AB.currentContact;
 
@@ -121,7 +129,7 @@ let AB = {
    * Create a new form fields for a simple list entry (e.g. email, IM, etc.)
    * 
    * @param kind
-   *        String indicating which value to create
+   *        String indicating which simple list to create the entry in.
    * @param index [optional]
    *        Index of an existing entry to prefill form fields with. If this
    *        is not provided, an empty entry is created and appended to the
@@ -177,6 +185,14 @@ let AB = {
     return false;
   },
 
+  /**
+   * Remove an entry from a simple list
+   * 
+   * @param kind
+   *        String indicating whichsimple list to remove the entry from.
+   * @param index
+   *        Index of the entry to remove. 
+   */
   removeSimpleListEntry: function removeMultiListEntry(kind, index) {
     let kind_plus_index = "edit." + kind + "." + index;
     let div = document.getElementById(kind_plus_index);
@@ -202,6 +218,9 @@ let AB = {
     return false;
   },
 
+  /**
+   * Hide the edit form.
+   */
   closeContactEditForm: function closeContactEditForm() {
     document.getElementById("newContactButton").disabled = false;
     document.getElementById("errorMsg").textContent = "";
@@ -231,12 +250,18 @@ let AB = {
     }
   },
 
+  /**
+   * Hide the edit form and update UI after canceling out of the edit form.
+   */
   cancelContactEditForm: function cancelContactEditForm() {
     AB.closeContactEditForm();
     AB.updateContactListing();
     return false;
   },
 
+  /**
+   * Save the contact that was edited to the database.
+   */
   saveContact: function saveContact() {
     let record = AB.currentContact;
 
@@ -284,6 +309,9 @@ let AB = {
     return false;
   },
 
+  /**
+   * Callback for `saveContact()`
+   */
   contactSaved: function contactSaved(contact) {
     AB.closeContactEditForm();
     AB.updateContactListing(contact.id);
@@ -320,6 +348,9 @@ let AB = {
     });
   },
 
+  /**
+   * Callback for `updateContactListing()`
+   */
   displayContactList: function displayContactList(contacts) {
     // Nuke existing content from the table.
     let table = document.getElementById("contactList");
@@ -370,6 +401,9 @@ let AB = {
     AB.updateContactDetails(contact_id);
   },
 
+  /**
+   * Show a particular contact's details.
+   */
   updateContactDetails: function updateContactDetails(contact_id) {
     window.navigator.mozContacts.find(["id", /*ALL OF THEM*/],
                                       AB.displayContactDetails,
@@ -377,6 +411,9 @@ let AB = {
                                       {filter: {id: contact_id}});
   },
 
+  /**
+   * Callback for `updateContactDetails()`.
+   */
   displayContactDetails: function displayContactDetails(contacts) {
     AB.closeContactEditForm();
 
@@ -425,6 +462,9 @@ let AB = {
     document.getElementById("contactView").style.display = "block";
   },
 
+  /**
+   * Delete the currently selected contact.
+   */
   deleteContact: function deleteContact() {
     let table = document.getElementById("contactList");
     let row = table.querySelector(".selected");
@@ -439,6 +479,9 @@ let AB = {
     return false;
   },
 
+  /**
+   * Callback for `deleteContact()`.
+   */
   contactDeleted: function contactDeleted() {
     let table = document.getElementById("contactList");
     let row = table.querySelector(".selected");
