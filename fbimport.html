@@ -15,7 +15,6 @@
   <progress id="progressBar"></progress>
   <p id="statusMsg">Not started yet.</p>
 </div>
-<textarea id="incontentlog"></textarea>
 
 <div id="fb-root"></div>
 
@@ -140,7 +139,6 @@ function importFBContacts(friends) {
       }
     }
     if (friend.email) {
-document.getElementById("incontentlog").textContent += friend.email + "\n";
       record.emails.push({type: "home", value: friend.email, pref: true});
     }
     if (friend.website) {
