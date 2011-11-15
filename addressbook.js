@@ -441,7 +441,7 @@ let AB = {
         }
         let tr = document.createElement("tr");
         let type_label = document.createElement("th");
-        type_label.textContent = FIELD_TYPES[entry.type];
+        type_label.textContent = FIELD_TYPES[entry.type] || entry.type;
         tr.appendChild(type_label);
         let value = document.createElement("td");
         value.textContent = entry.value;
