@@ -352,7 +352,7 @@ Contacts.prototype = {
     //TODO ensure default values exist
     debug("Going to add", contact.id);
     this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
-      store.add(contact, contact.id).onsuccess = function (event) {
+      store.add(contact).onsuccess = function (event) {
         let id = event.target.result;
         debug("Successfully added", id);
         store.get(id).onsuccess = function (event) {
@@ -368,7 +368,7 @@ Contacts.prototype = {
     // probably want to verify that contact.id actually is in the store.
     this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
       debug("Going to update", contact.id);
-      store.put(contact, contact.id);
+      store.put(contact);
     }, successCb, errorCb);
   },
 
