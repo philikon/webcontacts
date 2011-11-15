@@ -1,6 +1,44 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <script type="application/javascript" src="http://www.google.com/jsapi"></script>
+  <script type="application/javascript">
+    google.load("gdata", "1.x");
+  </script>
+<style>
+html, body {
+  margin: 0;
+  font-family: helvetica;
+  height: 100%;
+  font-size: 12px;
+}
+
+#topRow {
+  padding: 5px 10px;
+  background-color: #B2CCFF;
+  height: 25px;
+  font-size: 12px;
+}
+
+#mainContent {
+  text-align: center;
+  border: 1px solid black;
+  width: -moz-calc(100% - 2px);
+  height: auto;
+  min-height: -moz-calc(100% - 75px);
+}
+
+#progressBar {
+  width: 200px;
+}
+
+footer {
+  padding: 10px 10px;
+  font-size: 12px;
+  background-color: #B2CCFF;
+  height: 18px;
+}
+</style>
 </head>
 <body>
 
@@ -11,6 +49,9 @@
 </div>
 
 <div id="mainContent">
+  <p>Due to a bug, the importer never finishes. Simply cancel by
+  closing the tab or <a href="addressbook.html">going back to the addressbook</a>.</p>
+
   <div id="feedback">
     <progress id="progressBar"></progress>
     <p id="statusMsg">(Not started yet.)</p>
@@ -26,7 +67,158 @@
 <script type="application/javascript;version=1.8" src="contacts.js"></script>
 <script type="application/javascript;version=1.8">
 
-function startImport() {
+var BATCH_SIZE = 20;
+var currentIndex = 1;
+var counter = 0;
+
+var _relStrip = "http://schemas.google.com/g/2005#".length;
+function relToType(value) {
+  // `rel` will be a stirng like "http://schemas.google.com/g/2005#home"
+  // So we're just going to strip that junk up front.
+  var rel = value.getRel();
+  if (rel == "http://schemas.google.com/g/2005#other") {
+    return value.getLabel();
+  }
+  if (rel) {
+    return rel.slice(_relStrip);
+  }
+  return "";
 }
 
+var contactsService;
+function startImport() {
+  contactsService = new google.gdata.contacts.ContactsService('exampleCo-exampleApp-1.0');
+  var scope = 'https://www.google.com/m8/feeds';
+  var token = google.accounts.user.login(scope);
+  getContacts();
+}
+
+function getContacts() {
+  var contactsFeedUri = "https://www.google.com/m8/feeds/contacts/default/full";
+  var query = new google.gdata.contacts.ContactQuery(contactsFeedUri);
+
+  //XXX according to the docs, this isn't a reliable way to do
+  // paging/batching (which seems to be true since we get stuck in a
+  // loop), yet they don't say how to do it better.
+  query.setMaxResults(BATCH_SIZE);
+  query.setStartIndex(currentIndex);
+  contactsService.getContactFeed(query, handleContactsFeed, handleError);
+}
+
+var handleContactsFeed = function(result) {
+  currentIndex += BATCH_SIZE;
+  var entries = result.feed.entry;
+  console.log("Got", entries.length, "entries");
+  var probablyNotLastBatch = (entries.length == BATCH_SIZE)
+
+  var progressBar = document.getElementById("progressBar");
+  var statusMsg = document.getElementById("statusMsg");
+  progressBar.setAttribute("max", currentIndex + BATCH_SIZE);
+
+  function next() {
+    progressBar.setAttribute("value", counter);
+    counter += 1;
+
+    if (entries.length) {
+      processEntry(entries.shift());
+    } else {
+      console.log("Done with this batch.");
+      if (probablyNotLastBatch) {
+        getContacts();
+      } else {
+        document.getElementById("startButton").disabled = false;
+        console.log("Done done!");
+      }
+    }
+  }
+
+  function errorCallback(error) {
+    console.error(error);
+
+    document.getElementById("startButton").disabled = false;
+    statusMsg.textContent = "An error occurred";
+  }
+
+  function processEntry(entry) {
+    var displayName = entry.getTitle().getText();
+    console.log("Processing", displayName);
+    statusMsg.textContent = "Importing " + displayName;
+
+    // Do we already have a contact by that name?
+    window.navigator.mozContacts.find(["id", "name", "displayName"],
+                                      createOrUpdateRecord.bind(this, entry),
+                                      errorCallback,
+                                      {filter: {displayName: displayName}});
+  }
+
+  function createOrUpdateRecord(contactEntry, existingRecords) {
+    var id = contactEntry.getId().getValue();
+    if (existingRecords.length) {
+      // We already have a record for this friend, so let's update it.
+      id = existingRecords[0].id;
+
+      // TODO for now we just do the same thing for both.
+      //return;
+    }
+
+    var displayName = contactEntry.getTitle().getText();
+    var names = displayName.split(" ");
+    var noteObj = contactEntry.getContent();
+
+    var record = {id: id,
+                  displayName: displayName,
+                  name: {familyName: names.pop(),
+                         givenName: names.join(" "),
+                         honorificPrefix: "",
+                         honorificSuffic: "",
+                         middleName: ""},
+                  emails: [],
+                  phoneNumbers: [],
+                  addresses: [],
+                  ims: [],
+                  organizations: [],
+                  note: (noteObj && noteObj.getText()) || "",
+                  photos: [],
+                  categories: [],
+                  urls: []};
+
+    contactEntry.getEmailAddresses().forEach(function (email) {
+      record.emails.push({type: relToType(email),
+                          value: email.getAddress(),
+                          pref: !!email.getPrimary()});
+    });
+    contactEntry.getPhoneNumbers().forEach(function (phone) {
+      record.phoneNumbers.push({type: relToType(phone),
+                                value: phone.getValue(),
+                                pref: !!phone.getPrimary()});
+    });
+    contactEntry.getPostalAddresses().forEach(function (address) {
+      record.addresses.push({type: relToType(address),
+                             value: address.getValue(),
+                             pref: !!address.getPrimary()});
+    });
+    contactEntry.getImAddresses().forEach(function (im) {
+      record.addresses.push({type: relToType(im), // maybe also im.getProtocol()?
+                             value: im.getAddress(),
+                             pref: !!im.getPrimary()});
+    });
+    //var organizations = contactEntry.getOrganizations();
+    //var categories = contactEntry.getCategories();
+
+    window.navigator.mozContacts.update(next, errorCallback, record);
+  };
+
+  next();
+}
+
+function handleError(e) {
+  console.error("There was an error!");
+  console.error(e.cause ? e.cause.statusText : e.message);
+}
 </script>
+
+<!-- This image must exist for the google API to work -->
+<img src="firefox.png" style="display: none;">
+
+</body>
+</html>
