@@ -6,6 +6,12 @@
 // - deleting
 
 
+const SIMPLE_LIST_FIELDS = ["phoneNumbers",
+                            "emails",
+                            "addresses", // for now
+                            "ims",
+                            "urls"];
+
 //XXX this would be l10n'ed
 const FIELD_TYPES = {
   home:   "Home",
@@ -17,7 +23,9 @@ const FIELD_TYPES = {
 const PLACEHOLDERS = {
   phoneNumbers: "Phone",
   emails:       "Email",
-  addresses:    "Address"
+  addresses:    "Address",
+  ims:          "IM name",
+  urls:         "URL"
 };
 
 /**
@@ -83,9 +91,9 @@ let AB = {
     let tbody = table.tBodies[0];
     tbody.insertBefore(tr, tbody.firstChild);
 
-    AB.newSimpleListEntry("phoneNumbers");
-    AB.newSimpleListEntry("emails");
-    AB.newSimpleListEntry("addresses");
+    SIMPLE_LIST_FIELDS.forEach(function (field) {
+      AB.newSimpleListEntry(field);
+    });
 
     document.getElementById("contactEdit").style.display = "block";
     document.getElementById("contactView").style.display = "none";
@@ -141,12 +149,10 @@ let AB = {
     kind_list.splice(index, 1);
 
     // Rename all following fields.
-console.info("Removing", kind, index);
     let prefix = "edit." + kind + ".";
     for (let i = index; i < kind_list.length; i++) {
       let old_prefix = prefix + (i + 1);
       let new_prefix = prefix + i;
-console.info("Renaming", old_prefix, "to", new_prefix);
       document.getElementById(old_prefix).id = new_prefix;
       document.getElementById(old_prefix + ".type").id = new_prefix + ".type";
       document.getElementById(old_prefix + ".value").id = new_prefix + ".value";
@@ -304,7 +310,7 @@ console.info("Renaming", old_prefix, "to", new_prefix);
       contact.displayName;
 
     let tbody = document.createElement("tbody");
-    ["phoneNumbers", "emails", "addresses"].forEach(function (field) {
+    SIMPLE_LIST_FIELDS.forEach(function (field) {
       let table = document.getElementById("view." + field);
       while (table.tBodies.length) {
         table.removeChild(table.tBodies[0]);
@@ -330,6 +336,14 @@ console.info("Renaming", old_prefix, "to", new_prefix);
       });
       table.appendChild(tbody);
     });
+
+    if (contact.birthday) {
+      document.getElementById("view.birthday").textContent =
+        contact.birthday; //TODO format
+    } else {
+      document.getElementById("view.birthday").textContent = "";      
+    };
+    document.getElementById("view.note").textContent = contact.note || "";
 
     document.getElementById("contactView").style.display = "block";
   },

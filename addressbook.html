@@ -51,12 +51,32 @@
       </tbody>
     </table>
 
+    <h2>IM</h2>
+    <table id="view.ims">
+      <tbody>
+        <!-- Dynamically created content goes here. -->
+      </tbody>
+    </table>
+
     <h2>Addresses</h2>
     <table id="view.addresses">
       <tbody>
         <!-- Dynamically created content goes here. -->
       </tbody>
     </table>
+
+    <h2>Websites</h2>
+    <table id="view.urls">
+      <tbody>
+        <!-- Dynamically created content goes here. -->
+      </tbody>
+    </table>
+
+    <h2>Birthday</h2>
+    <p id="view.birthday"></id>
+
+    <h2>Note</h2>
+    <pre id="view.note"></pre>
 
     <div>
       <button onclick="return AB.deleteContact();">Delete</button>
@@ -80,10 +100,18 @@
       <!-- Dynamically created content goes here. -->
       <button id="edit.emails.add" onclick="return AB.newSimpleListEntry('emails');">+</button>
     </fieldset>
+    <fieldset name="ims" id="edit.fieldset.ims">
+      <!-- Dynamically created content goes here. -->
+      <button id="edit.ims.add" onclick="return AB.newSimpleListEntry('ims');">+</button>
+    </fieldset>
     <fieldset name="addresses" id="edit.fieldset.addresses">
       <!-- TODO this can't be a simple list entry -->
       <!-- Dynamically created content goes here. -->
       <button id="edit.addresses.add" onclick="return AB.newSimpleListEntry(addresses');">+</button>
+    </fieldset>
+    <fieldset name="urls" id="edit.fieldset.urls">
+      <!-- Dynamically created content goes here. -->
+      <button id="edit.urls.add" onclick="return AB.newSimpleListEntry('urls');">+</button>
     </fieldset>
     <textarea id="edit.note" placeholder="Notes"></textarea>
     <div>
