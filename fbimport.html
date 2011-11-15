@@ -32,8 +32,6 @@ var FRIENDS_QUERY = "SELECT " + USER_FIELDS.join(", ") + " FROM user " +
                     "(SELECT uid2 FROM friend WHERE uid1=me())";
 
 function startFBImport() {
-  document.getElementById("startButton").disabled = true;
-
   window.fbAsyncInit = function() {
     FB.init({
       appId      : '320554684628287', // App ID
@@ -69,6 +67,7 @@ function onFBInit() {
 }
 
 function onFBLoggedIn() {
+  document.getElementById("startButton").disabled = false;
   var friends_query = FB.Data.query(FRIENDS_QUERY);
   FB.Data.waitOn([friends_query], function () {
     console.log("Mai fwiends", friends_query.value);
@@ -101,6 +100,7 @@ function importFBContacts(friends) {
 
   function errorCallback(error) {
     console.error(error);
+    document.getElementById("startButton").disabled = false;
     statusMsg.textContent = "An error occurred";
   }
 
