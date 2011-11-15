@@ -80,7 +80,7 @@
 
     <div>
       <button onclick="return AB.deleteContact();">Delete</button>
-      <button onclick="">Edit</button>
+      <button onclick="return AB.editContact();">Edit</button>
     </div>
   </section>
 
@@ -113,10 +113,12 @@
       <!-- Dynamically created content goes here. -->
       <button id="edit.urls.add" onclick="return AB.newSimpleListEntry('urls');">+</button>
     </fieldset>
+    <!-- XXX gecko doesn't support type="date" yet :( -->
+    <input type="date" id="edit.birthday" placeholder="Birthday">
     <textarea id="edit.note" placeholder="Notes"></textarea>
     <div>
-      <button onclick="return AB.cancelNewContact();">Cancel</button>
-      <button onclick="return AB.createNewContact();">Create</button>
+      <button onclick="return AB.cancelContactEditForm();">Cancel</button>
+      <button onclick="return AB.saveContact();">Save</button>
     </div>
 </form>
 

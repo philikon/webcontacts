@@ -91,24 +91,63 @@ let AB = {
     let tbody = table.tBodies[0];
     tbody.insertBefore(tr, tbody.firstChild);
 
+    return this.editContact();
+  },
+
+  editContact: function editContact() {
+    let contact = AB.currentContact;
+
+    document.getElementById("edit.name.givenName").value =
+      contact.name.givenName || "";
+    document.getElementById("edit.name.familyName").value =
+      contact.name.familyName || "";
+    document.getElementById("edit.birthday").value = contact.birthday || "";
+    document.getElementById("edit.note").value = contact.note || "";
+
     SIMPLE_LIST_FIELDS.forEach(function (field) {
-      AB.newSimpleListEntry(field);
+      let value = contact[field];
+      if (!value) {
+        value = contact[field] = [];
+      }
+      for (let i = 0; i < value.length; i++) {
+        AB.newSimpleListEntry(field, i);
+      }
+      if (!value.length) {
+        // Just create an empty row.
+        AB.newSimpleListEntry(field);
+      }
     });
 
     document.getElementById("contactEdit").style.display = "block";
     document.getElementById("contactView").style.display = "none";
-    return false;
+    return false;    
   },
 
-  newSimpleListEntry: function newSimpleListEntry(kind) {
-    let fieldset = document.getElementById("edit.fieldset." + kind);
+  /**
+   * Create a new form fields for a simple list entry (e.g. email, IM, etc.)
+   * 
+   * @param kind
+   *        String indicating which value to create
+   * @param index [optional]
+   *        Index of an existing entry to prefill form fields with. If this
+   *        is not provided, an empty entry is created and appended to the
+   *        end of the list.
+   */
+  newSimpleListEntry: function newSimpleListEntry(kind, index) {
     let kind_list = AB.currentContact[kind];
-    let new_index = kind_list.length;
-    kind_list[new_index] = {type: "", value: "", pref: false};
+    let entry;
+    if (index == null) {
+      index = kind_list.length;
+      entry = kind_list[index] = {type: "", value: "", pref: false};
+    } else {
+      entry = kind_list[index];
+    }
 
-    let kind_plus_index = "edit." + kind + "." + new_index;
+    let fieldset = document.getElementById("edit.fieldset." + kind);
+    let kind_plus_index = "edit." + kind + "." + index;
     let div = document.createElement("div");
     div.id = kind_plus_index;
+    div.classList.add("simpleListEntry");
 
     let select = document.createElement("select");
     select.id = kind_plus_index + ".type";
@@ -116,6 +155,9 @@ let AB = {
       let option = document.createElement("option");
       option.value = field_type;
       option.textContent = FIELD_TYPES[field_type];
+      if (field_type == entry.type) {
+        option.selected = "selected";
+      }
       select.appendChild(option);
     }
     div.appendChild(select);
@@ -125,12 +167,13 @@ let AB = {
     let input = document.createElement("input");
     input.id = kind_plus_index + ".value";
     input.placeholder = PLACEHOLDERS[kind];
+    input.value = entry.value || "";
     div.appendChild(input);
 
     let button = document.createElement("button");
     button.id = kind_plus_index + ".remove";
     button.setAttribute("onclick", "return AB.removeSimpleListEntry('" +
-                                   kind + "', " + new_index + ");");
+                                   kind + "', " + index + ");");
     button.textContent = "-";
     div.appendChild(button);
     //TODO hide button if it's the last entry
@@ -176,25 +219,31 @@ let AB = {
     }
 
     let form = document.getElementById("contactEdit");
-    form.reset();
     form.style.display = "none";
 
+    // Remove all dynamically created elements from the form.
+    let simpleListEntries = form.querySelectorAll(".simpleListEntry");
+    for (let i = 0; i < simpleListEntries.length; i++) {
+      let element = simpleListEntries[i];
+      element.parentNode.removeChild(element);
+    }
+
+    // Re-enable form fields and reset to default values.
+    form.reset();
     let fields = form.elements;
     for (let i = 0; i < fields.length; i++) {
       let field = fields[i];
       field.disabled = false;
     }
-
-    return false;
   },
 
-  cancelNewContact: function cancelNewContact() {
-    AB.currentContact = null;
+  cancelContactEditForm: function cancelContactEditForm() {
     AB.closeContactEditForm();
+    AB.updateContactListing();
     return false;
   },
 
-  createNewContact: function createNewContact() {
+  saveContact: function saveContact() {
     let record = AB.currentContact;
 
     let form = document.getElementById("contactEdit");
@@ -216,16 +265,24 @@ let AB = {
     //TODO this is a locale setting
     record.displayName = record.name.givenName + " " + record.name.familyName;
 
-    console.log("Adding to the addressbook", record);
-    window.navigator.mozContacts.create(AB.contactCreated,
-                                        AB.displayErrorMsg,
-                                        record);
+    if (!AB.currentContact.id) {
+      console.log("Adding to the addressbook", record);
+      window.navigator.mozContacts.create(AB.contactSaved,
+                                          AB.displayErrorMsg,
+                                          record);
+    } else {
+      console.log("Updating the addressbook", record);
+      window.navigator.mozContacts.update(AB.contactSaved.bind(AB, record),
+                                          AB.displayErrorMsg,
+                                          record);
+    }
+
     return false;
   },
 
-  contactCreated: function contactCreated() {
+  contactSaved: function contactSaved(contact) {
     AB.closeContactEditForm();
-    AB.updateContactListing();
+    AB.updateContactListing(contact.id);
   },
 
   displayErrorMsg: function displayErrorMsg(error) {
@@ -241,9 +298,22 @@ let AB = {
     }    
   },
 
-  updateContactListing: function updateContactListing() {
+  /**
+   * Load contacts from the database and refresh the listing.
+   * 
+   * @param selected_id [optional]
+   *        ID of the record that's to be selected
+   */
+  updateContactListing: function updateContactListing(selected_id) {
     window.navigator.mozContacts.find(["id", "displayName"],
-                                      AB.displayContactList);
+                                      function (contacts) {
+      AB.displayContactList(contacts);
+      if (selected_id) {
+        let row = document.getElementById(selected_id);
+        row.classList.add("selected");
+        AB.updateContactDetails(selected_id);
+      }
+    });
   },
 
   displayContactList: function displayContactList(contacts) {
@@ -293,7 +363,10 @@ let AB = {
     row.classList.add("selected");
     let contact_id = row.id;
     console.log("Selected", contact_id);
+    AB.updateContactDetails(contact_id);
+  },
 
+  updateContactDetails: function updateContactDetails(contact_id) {
     window.navigator.mozContacts.find(["id", /*ALL OF THEM*/],
                                       AB.displayContactDetails,
                                       function (error) { /* TODO */ },
