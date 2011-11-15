@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+
+<button id="startButton" onclick="startFBImport();">
+  Import Facebook contacts
+</button>
+
+<p>Note: Due to a limitation in the Facebook API, only your friends' names can be imported.</p>
+
+<div id="feedback">
+  <label for="progressBar">Progress:</label>
+  <progress id="progressBar"></progress>
+  <p id="statusMsg">Not started yet.</p>
+</div>
+
+<div id="fb-root"></div>
+
+<script type="application/javascript;version=1.8" src="contacts.js"></script>
+<script type="application/javascript;version=1.8">
+var SCOPES = ["friends_birthday", "friends_website", "friends_photos",
+              "email"];
+
+var FRIENDS_QUERY = "SELECT uid, name from user " +
+                    "WHERE uid IN " +
+                    "(SELECT uid2 FROM friend WHERE uid1=me())";
+
+function startFBImport() {
+  document.getElementById("startButton").disabled = true;
+
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '320554684628287', // App ID
+      status     : true, // check login status
+      cookie     : true, // enable cookies to allow the server to access the session
+      oauth      : true, // enable OAuth 2.0
+      xfbml      : true  // parse XFBML
+    });
+
+    onFBInit();
+  };
+
+  (function(d){
+    var js, id = 'facebook-jssdk'; if (d.getElementById(id)) {return;}
+    js = d.createElement('script'); js.id = id; js.async = true;
+    js.src = "//connect.facebook.net/en_US/all.js";
+    d.getElementsByTagName('head')[0].appendChild(js);
+  }(document));
+}
+
+function onFBInit() {
+  FB.login(function(response) {
+    if (response.authResponse) {
+      console.log('Welcome!  Fetching your information.... ');
+      FB.api('/me', function(response) {
+        console.log('Good to see you, ' + response.name + '.');
+        onFBLoggedIn();
+      });
+    } else {
+      console.log('User cancelled login or did not fully authorize.');
+    }
+  }, {scope: SCOPES.join(",")});
+}
+
+function onFBLoggedIn() {
+  var friends_query = FB.Data.query(FRIENDS_QUERY);
+  FB.Data.waitOn([friends_query], function () {
+    console.log("Mai fwiends", friends_query.value);
+    importFBContacts(friends_query.value);
+  });
+}
+
+function importFBContacts(friends) {
+  var startTime = Date.now();
+  var total = friends.length;
+  var counter = 0;
+  var progressBar = document.getElementById("progressBar");
+  var statusMsg = document.getElementById("statusMsg");
+  progressBar.setAttribute("max", friends.length);
+
+  function next() {
+    progressBar.setAttribute("value", counter);
+    counter += 1;
+
+    if (friends.length) {
+      processFriend(friends.shift());
+    } else {
+      console.log("Done");
+      var duration = ((Date.now() - startTime) / 1000).toFixed(0);
+      statusMsg.textContent = "Successfully imported " + total + " friends. " +
+                              "Took " + duration + " seconds";
+      document.getElementById("startButton").disabled = false;
+    }
+  }
+
+  function errorCallback(error) {
+    console.error(error);
+    statusMsg.textContent = "An error occurred";
+  }
+
+  function processFriend(friend) {
+    console.log("Processing", friend);
+    statusMsg.textContent =
+      "Importing " + friend.name + " (" + counter + "/" + total + ")";
+
+    // Do we already have a contact by that name?
+    window.navigator.mozContacts.find(["id", "name", "displayName"],
+                                      createOrUpdateRecord.bind(this, friend),
+                                      errorCallback,
+                                      {filter: {displayName: friend.name}});
+  }
+
+  function createOrUpdateRecord(friend, records) {
+    if (records.length) {
+      console.log("We already have a record for", friend.name);
+      // TODO update existing record... for now we just do the same for both
+      //return;
+    }
+
+    console.log("We don't have a record for", friend.name,
+                "going to add one");
+    var names = friend.name.split(" ");
+    var record = {id: "fb-" + friend.uid,
+                  displayName: friend.name,
+                  name: {familyName: names.pop(),
+                         givenName: names.join(" ")}};
+    window.navigator.mozContacts.update(next, errorCallback, record);
+  }
+
+  next();
+}
+</script>
