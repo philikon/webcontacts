@@ -15,15 +15,18 @@
   <progress id="progressBar"></progress>
   <p id="statusMsg">Not started yet.</p>
 </div>
+<textarea id="incontentlog"></textarea>
 
 <div id="fb-root"></div>
 
 <script type="application/javascript;version=1.8" src="contacts.js"></script>
 <script type="application/javascript;version=1.8">
-var SCOPES = ["friends_birthday", "friends_website", "friends_photos",
-              "email"];
 
-var FRIENDS_QUERY = "SELECT uid, name from user " +
+var PERMS = ["friends_about_me", "friends_birthday", "friends_website",
+             "friends_photos", "email"];
+var USER_FIELDS = ["uid", "name", "first_name", "middle_name", "last_name",
+                   "email", "birthday", "website", "profile_url"];
+var FRIENDS_QUERY = "SELECT " + USER_FIELDS.join(", ") + " FROM user " +
                     "WHERE uid IN " +
                     "(SELECT uid2 FROM friend WHERE uid1=me())";
 
@@ -61,7 +64,7 @@ function onFBInit() {
     } else {
       console.log('User cancelled login or did not fully authorize.');
     }
-  }, {scope: SCOPES.join(",")});
+  }, {scope: PERMS.join(",")});
 }
 
 function onFBLoggedIn() {
@@ -112,20 +115,40 @@ function importFBContacts(friends) {
                                       {filter: {displayName: friend.name}});
   }
 
-  function createOrUpdateRecord(friend, records) {
-    if (records.length) {
-      console.log("We already have a record for", friend.name);
-      // TODO update existing record... for now we just do the same for both
+  function createOrUpdateRecord(friend, existingRecords) {
+    var id = "fb-" + friend.uid;
+    if (existingRecords.length) {
+      // We already have a record for this friend, so let's update it.
+      id = existingRecords[0].id;
+
+      // TODO for now we just do the same thing for both.
       //return;
     }
 
-    console.log("We don't have a record for", friend.name,
-                "going to add one");
-    var names = friend.name.split(" ");
-    var record = {id: "fb-" + friend.uid,
+    var record = {id: id,
                   displayName: friend.name,
-                  name: {familyName: names.pop(),
-                         givenName: names.join(" ")}};
+                  name: {familyName: friend.last_name,
+                         givenName:  friend.first_name,
+                         middleName: friend.middle_name},
+                  birthday: null,
+                  emails: [],
+                  urls: []};
+    if (friend.birthday) {
+      var date = new Date(friend.birthday);
+      if (date != "Invalid Date") {
+        record.birthday = date;
+      }
+    }
+    if (friend.email) {
+document.getElementById("incontentlog").textContent += friend.email + "\n";
+      record.emails.push({type: "home", value: friend.email, pref: true});
+    }
+    if (friend.website) {
+      record.urls.push({type: "home", value: friend.website, pref: true});
+    }
+    if (friend.profile_url) {
+      record.urls.push({type: "facebook", value: friend.profile_url, pref: false});
+    }
     window.navigator.mozContacts.update(next, errorCallback, record);
   }
 
