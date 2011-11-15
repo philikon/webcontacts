@@ -279,7 +279,11 @@ let AB = {
       }
       let tbody = document.createElement("tbody");
 
-      contact[field].forEach(function (entry) {
+      let value = contact[field];
+      if (!value || !value.length) {
+        return;
+      }
+      value.forEach(function (entry) {
         if (!entry.value) {
           return;
         }
