@@ -1,11 +1,5 @@
 "use strict";
 
-//TODO
-// - searching/filtering
-// - editing contacts
-// - deleting
-
-
 const SIMPLE_LIST_FIELDS = ["phoneNumbers",
                             "emails",
                             "addresses", // for now
