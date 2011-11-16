@@ -1,0 +1,8 @@
+This repository contains
+
+* an implementation of WebContacts using web technologies (JavaScript,
+  IndexedDB) for potential use in gecko itself (contacts.js)
+
+* a sample address book application (application.html)
+
+* an address importer for Facebook and Gmail (fbimport.html, gmailimport.html)
