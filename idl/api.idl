@@ -1,30 +1,55 @@
 /**
- * XXX TODO
+ * This is the read-only portion API of the navigator.contacts object.
  */
 [NoInterfaceObject]
 interface Contacts {
-    void create(ContactSuccessCB successCb,
-                ContactErrorCB errorCb,
-                Contact contact);
-    void update(ContactSuccessCB successCb,
-                ContactErrorCB errorCb,
-                Contact contact);
-    void delete(ContactSuccessCB successCb,
-                ContactErrorCB errorCb,
-                Contact contact);
     void find(ContactFindCB successCb,
               ContactErrorCB errorCb,
               ContactFindOptions options);
 };
 
-[Callback=FunctionOnly, NoInterfaceObject]
-interface ContactSuccessCB {
-    void onsuccess(in DOMString id);
+/**
+ * (Taken verbatim from ContactsWriter draft)
+ */
+[NoInterfaceObject]
+interface ContactsWriter : Contacts {
+    Contact create(ContactProperties properties);
 };
 
 /**
- * XXX TODO
- * 
+ * (Taken verbatim from ContactsWriter draft)
+ */
+[NoInterfaceObject]
+interface ContactWriter : ContactProperties {
+    void save(ContactSuccessCB successCb,
+              ContactErrorCB errorCb);
+    void remove(ContactSuccessCB successCb,
+                ContactErrorCB errorCb);
+    Contact clone();
+};
+
+/**
+ * A Contact object combines the fields from ContactProperties and the methods
+ * from ContactWriter. On top of that it contains read-only attributes set by
+ * the database.
+ */
+[NoInterfaceObject]
+interface Contact : ContactWriter {
+    readonly attribute DOMString              id;
+
+    readonly attribute Date?                  published;
+    readonly attribute Date?                  updated;
+};
+
+/**
+ * (Taken verbatim from ContactsWriter draft)
+ */
+[Callback=FunctionOnly, NoInterfaceObject]
+interface ContactSuccessCB {
+    void onsuccess (Contact contact);
+};
+
+/**
  * (Taken verbatim from W3C Editor's Draft 10 November 2011)
  */
 [Callback=FunctionOnly, NoInterfaceObject]
@@ -33,8 +58,6 @@ interface ContactErrorCB {
 };
 
 /**
- * XXX TODO
- * 
  * (Taken verbatim from W3C Editor's Draft 10 November 2011)
  */
 [NoInterfaceObject]
@@ -50,7 +73,7 @@ interface ContactError {
 };
 
 /**
- * XXX TODO
+ * Object specifying search options.
  *
  * Based on the Portable Contacts query API
  * (http://portablecontacts.net/draft-spec.html). The only difference is
@@ -61,19 +84,77 @@ interface ContactError {
 [NoInterfaceObject]
 interface ContactFindOptions {
     /* presentation */
+
+    /**
+     * Search qualifier.
+     *
+     * The W3C draft requires this to have non-zero length, which means one
+     * must always explicitly state the fields which can be pretty tedious.
+     * Although analogous to SQL's SELECT, one could define "*" matching all
+     * possible fields.
+     */
     attribute DOMString[]? fields;
 
     /* filtering */
+
+    /**
+     * List of one or more field names that 'filterOp' and 'filterValue' are
+     * applied to. If this is provided, at least 'filterOp' must be provided
+     * too. A record matches when the filter matches at least one of the
+     * specified fields' values.
+     */
     attribute DOMString[]? filterBy;
+
+    /**
+     * Filter operation to perform. Valid operations are
+     * - 'present': the field value must be non-empty.
+     * - 'equals': the field value must be identical to the 'filterValue'.
+     * - 'contains': 'filterValue' must be a substring of the field value.
+     * - 'startswith': 'filterValue' must be a substring of the field value,
+     *                 starting at the beginning.
+     * - 'iequals', 'icontains', 'istartswith' work like their respective
+     *   equivalents, but they ignore case.
+     */
     attribute DOMString?   filterOp;
+
+    /**
+     * Value to filter by, using the comparison method specified by 'filterOp'.
+     */
     attribute DOMString?   filterValue;
+
+    /**
+     * Only return records that have been added or modified since this time.
+     */
     attribute Date?        updatedSince;
 
     /* sorting */
+
+    /**
+     * List of one or more field names to sort records by. Records will first
+     * be sorted by the first field, then the second, and so forth. Sorting
+     * by plural fields will sort according to the entry marked primary.
+     */
     attribute DOMString[]? sortBy;
+
+    /**
+     * Order in which the sorting is to be done. Valid values are
+     * - 'ascending' (default)
+     * - 'descending'
+     */
     attribute DOMString?   sortOrder;
 
     /* pagination */
+
+    /**
+     * Specify the offset of the first result to be returned with respect
+     * to the total list of records matching the query. This must be non-
+     * negative and defaults to 0.
+     */
     attribute long?        startIndex;
+
+    /**
+     * Specified the number of records to be returned, if non-zero. Defaults
+     * to 0.
+     */
     attribute long?        count;
 };

@@ -1,41 +1,32 @@
 /**
- * XXX TODO
+ * (This is similar to the W3C API and the PoCo definitions.)
  */
 [NoInterfaceObject]
-interface Contact {
+interface ContactProperties {
     /* singular fields */
 
-    //XXX philikon: I don't think it's very useful to declare 'id' to be
-    // readonly, unless we give contact syncing apps a way to associate
-    // their upstream IDs with the contact as well and query by it.
-    readonly attribute DOMString              id;
-    readonly attribute Date?                  published;
-    readonly attribute Date?                  updated;
-
-             attribute DOMString?             displayName;
-             attribute ContactName?           name;
-             attribute DOMString?             nickname;
-             attribute DOMString?             note;
-             attribute Date?                  birthday;
+    attribute DOMString?             displayName;
+    attribute ContactName?           name;
+    attribute DOMString?             nickname;
+    attribute DOMString?             note;
+    attribute Date?                  birthday;
 
     /* plural fields */
 
-             attribute ContactField[]?        emails;
-             attribute ContactField[]?        urls;
-             attribute ContactField[]?        phoneNumbers;
-             attribute ContactField[]?        ims;
-             attribute ContactField[]?        photos;
-             attribute ContactAddress[]?      addresses;
-             attribute ContactOrganization[]? organizations;
-             attribute DOMString[]?           categories; // PoCo calls these tags?
+    attribute ContactField[]?        emails;
+    attribute ContactField[]?        urls;
+    attribute ContactField[]?        phoneNumbers;
+    attribute ContactField[]?        ims;
+    attribute ContactField[]?        photos;
+    attribute ContactAddress[]?      addresses;
+    attribute ContactOrganization[]? organizations;
+    attribute DOMString[]?           categories; // PoCo calls these tags?
 
     //TODO additional PoCo fields?
 };
 
 
 /**
- * XXX TODO
- * 
  * (This is similar to the W3C API, though it also includes the 'formatted'
  * field as defined by PoCo and allows multiple values for name segments
  * as defined by vCard4.)
@@ -51,8 +42,6 @@ interface ContactName {
 };
 
 /**
- * XXX TODO
- * 
  * (This is similar to the W3C API, though it uses 'primary' instead of
  * 'pref'.)
  */
@@ -65,8 +54,6 @@ interface ContactField {
 
 
 /**
- * XXX TODO
- * 
  * (This is similar to the W3C API, though it uses 'primary' instead of
  * 'pref' and adds the 'formatted' attribute as defined by PoCo.)
  */
@@ -83,8 +70,6 @@ interface ContactAddress {
 };
 
 /**
- * XXX TODO
- * 
  * (This is similar to the W3C API, though it uses 'primary' instead of
  * 'pref' and XXX TODO.)
  */
