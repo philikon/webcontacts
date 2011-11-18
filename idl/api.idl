@@ -1,0 +1,79 @@
+/**
+ * XXX TODO
+ */
+[NoInterfaceObject]
+interface Contacts {
+    void create(ContactSuccessCB successCb,
+                ContactErrorCB errorCb,
+                Contact contact);
+    void update(ContactSuccessCB successCb,
+                ContactErrorCB errorCb,
+                Contact contact);
+    void delete(ContactSuccessCB successCb,
+                ContactErrorCB errorCb,
+                Contact contact);
+    void find(ContactFindCB successCb,
+              ContactErrorCB errorCb,
+              ContactFindOptions options);
+};
+
+[Callback=FunctionOnly, NoInterfaceObject]
+interface ContactSuccessCB {
+    void onsuccess(in DOMString id);
+};
+
+/**
+ * XXX TODO
+ * 
+ * (Taken verbatim from W3C Editor's Draft 10 November 2011)
+ */
+[Callback=FunctionOnly, NoInterfaceObject]
+interface ContactErrorCB {
+    void onerror (ContactError error);
+};
+
+/**
+ * XXX TODO
+ * 
+ * (Taken verbatim from W3C Editor's Draft 10 November 2011)
+ */
+[NoInterfaceObject]
+interface ContactError {
+    const unsigned short UNKNOWN_ERROR = 0;
+    const unsigned short INVALID_ARGUMENT_ERROR = 1;
+    const unsigned short TIMEOUT_ERROR = 2;
+    const unsigned short PENDING_OPERATION_ERROR = 3;
+    const unsigned short IO_ERROR = 4;
+    const unsigned short NOT_SUPPORTED_ERROR = 5;
+    const unsigned short PERMISSION_DENIED_ERROR = 20;
+    readonly attribute unsigned short code;
+};
+
+/**
+ * XXX TODO
+ *
+ * Based on the Portable Contacts query API
+ * (http://portablecontacts.net/draft-spec.html). The only difference is
+ * that 'filterBy' and 'sortBy' are arrays of strings instead of a single
+ * string value, to allow filtering and sorting by multiple values
+ * simultaneously.
+ */
+[NoInterfaceObject]
+interface ContactFindOptions {
+    /* presentation */
+    attribute DOMString[]? fields;
+
+    /* filtering */
+    attribute DOMString[]? filterBy;
+    attribute DOMString?   filterOp;
+    attribute DOMString?   filterValue;
+    attribute Date?        updatedSince;
+
+    /* sorting */
+    attribute DOMString[]? sortBy;
+    attribute DOMString?   sortOrder;
+
+    /* pagination */
+    attribute long?        startIndex;
+    attribute long?        count;
+};
