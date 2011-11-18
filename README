@@ -1,5 +1,7 @@
 This repository contains
 
+* an API draft for WebContacts in WebIDL (idl/schema.idl, idl/api.idl)
+
 * an implementation of WebContacts using web technologies (JavaScript,
   IndexedDB) for potential use in gecko itself (contacts.js)
 
