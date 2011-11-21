@@ -10,7 +10,6 @@
 <script type="application/javascript;version=1.8">
 
 let sample_contact = {
-  id: "c3b2c2b8-0eff-4ed6-865e-a372b7e0154f",
   displayName: "Philipp von Weitershausen",
   name: {
     familyName: "von Weitershausen",
@@ -31,8 +30,8 @@ let sample_contact = {
   categories: [],
   urls: []
 };
-
-let fields = ["id", "name", "ims"];
+let sample_id;
+let contact;
 
 function onSuccess(contacts) {
   console.log("onSuccess", contacts);
@@ -63,83 +62,100 @@ let steps = [
   },
   function () {
     console.log("Retrieving all contacts...");
-    window.navigator.mozContacts.find(fields, function (contacts) {
+    window.navigator.mozContacts.find(function (contacts) {
       assert(contacts.length == 0, "Empty database is empty.");
       next();
     }, onFailure, {});
   },
   function () {
     console.log("Adding a new contact", sample_contact);
-    window.navigator.mozContacts.create(function (contact) {
-      assert(contact.id == sample_contact.id, "Same ID"); // TODO have the contacts service generate the ID?
+    let contact = window.navigator.mozContacts.create(sample_contact);
+    contact.save(function () {
+      assert(contact.id, "The contact now has an ID.");
+      sample_id = contact.id;
       assert(contact.displayName == sample_contact.displayName, "Same displayName");
+      //TODO compare more things
       next();
-    }, onFailure, sample_contact);
+    }, onFailure);
   },
   function () {
     console.log("Retrieving all contacts...");
-    window.navigator.mozContacts.find(fields, function (contacts) {
+    window.navigator.mozContacts.find(function (contacts) {
       assert(contacts.length == 1, "Found exactly 1 contact.");
-      assert(contacts[0].id == sample_contact.id, "Same ID");
-      assert(contacts[0].displayName == sample_contact.displayName, "Same displayName");
-      assert(contacts[0].ims.length == 0, "No IMS info.");
+      contact = contacts[0];
+      assert(contact.id == sample_id, "Same ID");
+      assert(contact.displayName == sample_contact.displayName, "Same displayName");
+      assert(contact.ims.length == 0, "No IMS info.");
       next();
     }, onFailure, {});
   },
   function () {
     console.log("Retrieving a specific contact by ID...");
-    window.navigator.mozContacts.find(fields, function (contacts) {
+    let options = {filterBy: ["id"],
+                   filterOp: "equals",
+                   filterValue: sample_contact.id};
+    window.navigator.mozContacts.find(function (contacts) {
       assert(contacts.length == 1, "Found exactly 1 contact.");
-      assert(contacts[0].id == sample_contact.id, "Same ID");
-      assert(contacts[0].displayName == sample_contact.displayName, "Same displayName");
-      assert(contacts[0].ims.length == 0, "No IMS info.");
+      contact = contacts[0];
+      assert(contact.id == sample_id, "Same ID");
+      assert(contact.displayName == sample_contact.displayName, "Same displayName");
+      assert(contact.ims.length == 0, "No IMS info.");
       next();
-    }, onFailure, {filter: {id: sample_contact.id}});
+    }, onFailure, options);
   },
 /*
   function () {
     console.log("Retrieving a specific contact by givenName...");
-    window.navigator.mozContacts.find(fields, function (contacts) {
+    let options = {filterBy: ["displayName"],
+                   filterOp: "equals",
+                   filterValue: sample_contact.displayName};
+    window.navigator.mozContacts.find(function (contacts) {
       assert(contacts.length == 1, "Found exactly 1 contact.");
-      assert(contacts[0].id == sample_contact.id, "Same ID");
-      assert(contacts[0].displayName == sample_contact.displayName, "Same displayName");
-      assert(contacts[0].ims.length == 0, "No IMS info.");
+      contact = contacts[0];
+      assert(contact.id == sample_id, "Same ID");
+      assert(contact.displayName == sample_contact.displayName, "Same displayName");
+      assert(contact.ims.length == 0, "No IMS info.");
       next();
-    }, onFailure, {filter: {givenName: sample_contact.name.givenName}});
+    }, onFailure, options);
   },
 */
   function () {
-    sample_contact.ims.push({type: "IRC",
-                             value: "philikon",
-                             pref: true});
-    console.log("Modifying contact", sample_contact);
-    window.navigator.mozContacts.update(function () {
+    contact.ims.push({type: "IRC",
+                      value: "philikon",
+                      pref: true});
+    console.log("Modifying contact", contact);
+    contact.save(function () {
       console.log("Retrieving all contacts...");
-      window.navigator.mozContacts.find(fields, function (contacts) {
+      window.navigator.mozContacts.find(function (contacts) {
         assert(contacts.length == 1, "Found exactly 1 contact.");
-        assert(contacts[0].id == sample_contact.id, "Same ID");
-        assert(contacts[0].displayName == sample_contact.displayName, "Same displayName");
-        assert(contacts[0].ims.length == 1, "Found exactly 1 IMS info.");
-        assert(contacts[0].ims[0].type == "IRC", "IMS type is correct.")
-        assert(contacts[0].ims[0].value == "philikon", "IMS value is correct.")
-        assert(contacts[0].ims[0].pref == true, "IMS pref is correct.")
+        contact = contacts[0];
+        assert(contact.id == sample_id, "Same ID");
+        assert(contact.displayName == sample_contact.displayName, "Same displayName");
+        assert(contact.ims.length == 1, "Found exactly 1 IMS info.");
+        assert(contact.ims[0].type == "IRC", "IMS type is correct.")
+        assert(contact.ims[0].value == "philikon", "IMS value is correct.")
+        assert(contact.ims[0].pref == true, "IMS pref is correct.")
         next();
       }, onFailure, {});
     }, onFailure, sample_contact);
   },
   function () {
     console.log("Searching contacts by query...");
-    window.navigator.mozContacts.find(fields, function (contacts) {
+    let options = {filterBy: ["displayName", "email"],
+                   filterOp: "icontains",
+                   filterValue: "phil"};
+    window.navigator.mozContacts.find(function (contacts) {
       assert(contacts.length == 1, "Found exactly 1 contact.");
-      assert(contacts[0].id == sample_contact.id, "Same ID");
-      assert(contacts[0].displayName == sample_contact.displayName, "Same displayName");
+      contact = contacts[0];
+      assert(contact.id == sample_id, "Same ID");
+      assert(contact.displayName == sample_contact.displayName, "Same displayName");
       next();
-    }, onFailure, {search: {query: "phil", fields: ["displayName", "email"]}});
+    }, onFailure, options);
   },
   function () {
-    console.log("Deleting contact", sample_contact.id);
-    window.navigator.mozContacts.delete(function () {
-      window.navigator.mozContacts.find(fields, function (contacts) {
+    console.log("Deleting contact", contact.id);
+    contact.remove(function () {
+      window.navigator.mozContacts.find(function (contacts) {
         assert(contacts.length == 0, "Empty database is empty.");
         next();
       }, onFailure, {});

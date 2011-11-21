@@ -170,20 +170,47 @@ Contacts.prototype = {
 
   /**
    * Create the initial database schema.
+   *
+   * The schema of records stored is as follows:
+   *
+   * {id:            "...",       // UUID
+   *  published:     Date(...),   // First published date.
+   *  updated:       Date(...),   // Last updated date.
+   *  properties:    {...}        // Object holding the ContactProperties
+   *  // The following arrays dupe and normalize data from 'properties' so
+   *  // that the corresponding fields can be multientry-indexed.
+   *  emails:        [],
+   *  urls:          [],
+   *  phoneNumbers:  [],
+   *  ims:           [],
+   *  addresses:     [],
+   *  organizations: []}
    */
   createSchema: function createSchema(db) {
     let objectStore = db.createObjectStore(STORE_NAME, {keyPath: "id"});
-    objectStore.createIndex("id", "id", { unique: true });
-    objectStore.createIndex("displayName", "displayName", { unique: false });
 
-    //TODO I want to be doing this:
-    objectStore.createIndex("familyName", "name.familyName", { unique: false });
-    objectStore.createIndex("givenName", "name.givenName", { unique: false });
+    // Metadata indexes
+    objectStore.createIndex("id",        "id", { unique: true });
+    objectStore.createIndex("published", "published", { unique: false });
+    objectStore.createIndex("updated",   "updated", { unique: false });
 
-    // TODO I also want to do this (see bug 692630):
-    // objectStore.createIndex("email", "emails", { multientry: true, unique: false });
-
+    // Indexes for singular properties
+    objectStore.createIndex("displayName", "properties.displayName",
+                            { unique: false });
     //TODO moar indexes here.
+
+    // Index for the 'name' property
+    objectStore.createIndex("familyName", "properties.name.familyName",
+                            { unique: false });
+    objectStore.createIndex("givenName", "properties.name.givenName",
+                            { unique: false });
+    //TODO moar indexes here.
+
+    // Indexes for plural properties
+    //TODO I want to do this (see bug 692630):
+    //objectStore.createIndex("email", "emails", { multientry: true, unique: false });
+
+    //TODO also consider creating indexes for lower case equivalents
     debug("Created object stores and indexes");
   },
 
@@ -222,6 +249,121 @@ Contacts.prototype = {
     }, failureCb);
   },
 
+  /**
+   * Create a new Contact object.
+   * 
+   * @param record
+   *        A record as stored in IndexedDB
+   * @param properties [optional]
+   *        Object containing initial field values.
+   * 
+   * @return a Contact object.
+   * 
+   * The returned Contact object closes over the IndexedDB record.
+   */
+  makeContact: function makeContact(record, properties) {
+    let contactsService = this;
+
+    let contact = record.properties;
+    if (!contact) {
+      contact = record.properties = {
+        displayName:   null,
+        name:          null,
+        nickname:      null,
+        note:          null,
+        birthday:      null,
+        emails:        [],
+        urls:          [],
+        phoneNumbers:  [],
+        ims:           [],
+        photos:        [],
+        addresses:     [],
+        organizations: [],
+        categories:    []
+      };
+    }
+
+    for (let field in properties) {
+      contact[field] = properties[field];
+    }
+
+    /* ContactWriter */
+
+    // Use Object.defineProperty() to ensure these methods aren't
+    // writable, configurable, enumerable.
+    Object.defineProperty(contact, "save",
+                          {value: function save(successCb, errorCb) {
+      contactsService.saveContact(record, successCb, errorCb);
+    }});
+
+    Object.defineProperty(contact, "remove",
+                          {value: function remove(successCb, errorCb) {
+      contactsService.removeContact(record, successCb, errorCb);
+    }});
+
+    Object.defineProperty(contact, "clone", {value: function clone() {
+      return contactsService.cloneContact(record);
+    }});
+
+    /* Contact */
+
+    // Use Object.defineProperty() to ensure these methods aren't
+    // writable, enumerable.
+    Object.defineProperty(contact, "id", {enumerable: true,
+                                          get: function () {
+      return record.id;
+    }});
+
+    Object.defineProperty(contact, "published", {enumerable: true,
+                                                 get: function () {
+      return record.published;
+    }});
+
+    Object.defineProperty(contact, "updated", {enumerable: true,
+                                               get: function () {
+      return record.updated;
+    }});
+
+    Object.seal(contact);
+    return contact;
+  },
+
+  updateRecordMetadata: function updateRecordMetadata(record) {
+    if (!record.id) {
+      record.id = generateUUID();
+    }
+    if (!record.published) {
+      record.published = new Date();
+    }
+    record.updated = new Date();
+    //TODO add indexable arrays of plural properties
+  },
+
+  saveContact: function saveContact(record, successCb, errorCb) {
+    //TODO verify record
+    this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
+      debug("Going to update", record.id);
+      this.updateRecordMetadata(record);
+      store.put(record);
+      txn.result = record.properties;
+    }.bind(this), successCb, errorCb);
+  },
+
+  removeContact: function removeContact(record, successCb, errorCb) {
+    //TODO verify record
+    this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
+      debug("Going to delete", record.id);
+      store.delete(record.id);
+      txn.result = record.properties;
+    }, successCb, errorCb);
+  },
+
+  cloneContact: function cloneContact(contact) {
+    //TODO should we set 'published'?
+    //TODO deep copy arrays and name
+    return this.makeContact({properties: contact});
+  },
+
 
   /**
    * WebContacts API
@@ -236,150 +378,138 @@ Contacts.prototype = {
    *        Callback function to invoke when there was an error.
    * @param options [optional]
    *        Object specifying search options. Possible attributes:
-   *        - filter
-   *          Object specifying properties and their values to filter by,
-   *          e.g. {lastName: "Smith"}. See also
-   *         http://specs.wacapps.net/2.0/jun2011/deviceapis/contact.html#::contact::ContactFilter
-   *        - search
-   *          Object specifying which properties to search for a given string,
-   *          e.g. {query: "john", fields: ["displayName", "email"]}
+   *        - filterBy
+   *        - filterOp
+   *        - filterValue
    *        Possibly supported in the future:
-   *        - batching
-   *        - sorting by specific keys
+   *        - fields
+   *        - sortBy
+   *        - sortOrder
+   *        - startIndex
+   *        - count
    */
-  find: function find(fields, successCb, failureCb, options) {
+  find: function find(successCb, failureCb, options) {
     //TODO PENDING_OPERATION_ERROR -- the transactionality of indexedDB should
     // give us this for free
-    if (!successCb) {
-      throw TypeError("Must provide a success callback.");
-    }
-
-    // A bunch of downstream code expects that failureCb is a function.
-    if (typeof failureCb != "function") {
-      failureCb = function () {};
-    }
-
-    if (!fields.length) {
-      failureCb(new ContactError(INVALID_ARGUMENT_ERROR));
-      return;
-    }
-
     //TODO verify fields, options
 
     let self = this;
     this.newTxn(IDBTransaction.READ_ONLY, function (txn, store) {
-      if (options && options.filter) {
-        self._findWithFilter(txn, store, options.filter);
-      } else if (options && options.search) {
-        self._findWithSearch(txn, store, options.search);
+      if (options && options.filterOp == "equals") {
+        self._findWithIndex(txn, store, options);
+      } else if (options && options.filterBy) {
+        self._findWithSearch(txn, store, options);
       } else {
         self._findAll(txn, store);
       }
     }, successCb, failureCb);
   },
 
-  _findWithFilter: function _findWithFilter(txn, store, filter) {
-    let filter_keys = Object.keys(filter);
+/* TODO XXX
+
+Ultimately it would be good to go to less blocking approach by processing
+only one record at a time as they return from the DB, e.g.:
+
+    request = index.openCursor(IDBKeyRange.only(value));
+    request.onSuccess = this._findRequestSuccessHandler.bind(this, txn, filter_keys);
+
+with this method:
+
+  _findRequestSuccessHandler: function (txn, filter_keys, event) {
+    if (!txn.result) {
+      txn.result = [];
+    }
+    let record = event.target.result;
+    if (!record) {
+      // There are no more results in this cursor. Nothing to do.
+      return;
+    }
+    //TODO filter by additional keys
+    txn.result.push(this.makeContact(record));
+  },
+*/
+
+  _findWithIndex: function _findWithIndex(txn, store, options) {
+    //TODO verify options.filterBy is an array
+
+    let filter_keys = options.filterBy.slice();
     //TODO check whether filter_keys are valid filters.
 
     let request;
-    if (!filter_keys.length) {
-      //TODO return error
-      debug("No filters provided!");
-      return;
-    } 
-
     // Query records by first filter. Apply any extra filters later.
     let key = filter_keys.shift();
-    let value = filter[key];
     //TODO check whether filter_key is a valid index;
     debug("Getting index", key);
     let index = store.index(key);
-    request = index.getAll(value);
+    request = index.getAll(options.filterValue);
 
     request.onsuccess = function (event) {
-      console.log("Request successful.", event.target.result);
-      txn.result = event.target.result;
+      console.log("Request successful. Record count:",
+                  event.target.result.length);
+      txn.result = event.target.result.map(this.makeContact.bind(this));
       //TODO filter by additional keys
-    };
+    }.bind(this);
   },
 
-  _findWithSearch: function _findWithSearch(txn, store, search) {
-    let query = search.query.toLowerCase();
+  _findWithSearch: function _findWithSearch(txn, store, options) {
+    //TODO verify options.filterBy is an array
 
     store.getAll().onsuccess = function (event) {
       console.log("Request successful.", event.target.result);
       txn.result = event.target.result.filter(function (record) {
-        for (let i = 0; i < search.fields.length; i++) {
-          let field = search.fields[i];
+        let properties = record.properties;
+        for (let i = 0; i < options.filterBy.length; i++) {
+          let field = options.filterBy[i];
           let value;
           switch (field) {
             case "familyName":
             case "givenName":
-              value = record.name[field];
+              value = properties.name[field];
               break;
             case "email":
             case "phoneNumber":
             case "ims":
               // HACK: Join all values together into a string.
-              value = [f.value for each (f in record[field])].join("\n");
+              value = [f.value for each (f in properties[field])].join("\n");
             default:
-              value = record[field];
+              value = properties[field];
           }
-          if (value.toLowerCase().indexOf(query) != -1) {
+          let match = false;
+          switch (options.filterOp) {
+            case "icontains":
+              match = value.toLowerCase().indexOf(options.filterValue) != -1;
+              break;
+            //TODO add more stuff here
+          }
+          if (match) {
             return true;
           }
         }
         return false;
-      });
-    };
+      }).map(this.makeContact.bind(this));
+    }.bind(this);
   },
 
   _findAll: function _findAll(txn, store) {
     store.getAll().onsuccess = function (event) {
-      console.log("Request successful.", event.target.result);
-      txn.result = event.target.result;
-    };
+      console.log("Request successful. Record count:",
+                  event.target.result.length);
+      txn.result = event.target.result.map(this.makeContact.bind(this));
+    }.bind(this);
   },
 
-  create: function create(successCb, errorCb, contact) {
-    if (!contact.id) {
-      contact.id = generateUUID();
-    } else {
-      // TODO verify that the record doesn't exist yet.
-    }
-    //TODO ensure the contact has at minimum fields (id, what else?)
-    //TODO ensure default values exist
-    debug("Going to add", contact.id);
-    this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
-      store.add(contact).onsuccess = function (event) {
-        let id = event.target.result;
-        debug("Successfully added", id);
-        store.get(id).onsuccess = function (event) {
-          debug("Retrieving full record for", id);
-          txn.result = event.target.result;
-        };
-      };
-    }, successCb, errorCb);
-  },
-
-  update: function update(successCb, errorCb, contact) {
-    //TODO verify record, like in create(), especially contact.id
-    // probably want to verify that contact.id actually is in the store.
-    this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
-      debug("Going to update", contact.id);
-      store.put(contact);
-    }, successCb, errorCb);
-  },
-
-  delete: function delete_(successCb, errorCb, id) {
-    //TODO verify id
-    // what should happen when 'id' doesn't exist?
-    this.newTxn(IDBTransaction.READ_WRITE, function (txn, store) {
-      debug("Going to delete", id);
-      store.delete(id);
-    }, successCb, errorCb);
+  /**
+   * Create a new Contact object.
+   *
+   * @param properties
+   *        Initial field values.
+   */
+  create: function create(properties) {
+    // We start with an empty DB record.
+    let record = {};
+    return this.makeContact(record, properties);
   }
+
 };
 
 
